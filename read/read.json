@@ -24,10 +24,4 @@
     "k~a r7x",
     "l~m r19"
   ],
-  "head": {
-    "text": ["tspan", ["tspan", {"fill": "blue", "font-weight": "bold", "font-size": "20", "font-style": "normal"}, "READ       "]]
-  },
-  "foot": {
-    "text": "*pp = power & performance, **earliest rcs/wl "
-  }
 }
