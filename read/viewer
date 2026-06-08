@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://wavedrom.com/skins/default.js"></script>
+<script src="https://wavedrom.com/wavedrom.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  button { padding: 10px 20px; font-size: 14px; cursor: pointer; margin: 5px; }
+  #codeBox { width: 90%; height: 200px; font-family: monospace; font-size: 12px; }
+  .instruction { color: green; font-weight: bold; }
+</style>
+</head>
+<body onload="WaveDrom.ProcessAll()">
+
+<h1>WaveDrom Library</h1>
+
+<h2>Memory Read Timing</h2>
+
+<button onclick="showCode()">1. Show Code</button>
+<button onclick="window.open('https://wavedrom.com/editor.html', '_blank')">2. Open Editor</button>
+
+<br><br>
+<textarea id="codeBox" style="display: none;"></textarea>
+<p id="instruction" style="display: none;" class="instruction">
+  ✅ Code is shown above! Select all (Cmd+A), copy (Cmd+C), then click "Open Editor" and paste (Cmd+V)
+</p>
+
+<br><br>
+
+<script type="WaveDrom">
+{signal: [
+  {},
+  {name: "BL", wave: "01....0....1..", node: ".j............."}, {},
+  {name: "BLdiff", wave: "10........1...", node: ".k............."}, {},
+  {name: "BLpch_b", wave: "0.1........0..", node: "..a........h...."}, {},
+  {name: "rcs", wave: "0.1.......0...", node: "..c.......f...."}, {},
+  {name: "WL", wave: "0..1.....0....", node: "...b.....g....."}, {},
+  {name: "colpch_b", wave: "0.1........0..", node: "..d........e........."}, {},
+  {name: "Saout", wave: "1.......0.....", node: "........i............"}, {},
+  {name: "gbpch_b", wave: "0..1.......0..", node: "...l............"}, {},
+  {name: "gbl", wave: "0...1........0", node: "....m............"}, {}
+],
+edge: [
+  "a-~b ..++++++r1 pp",
+  "c~b r1a raw unmatched......",
+  "d~b r1b pp (rcs)",
+  "e~g r2b**",
+  "e~-f ++++r2b,r27y",
+  "h-~g ++++++r2 ",
+  "f~-h ..r2c",
+  "i~-g r4 90% bf wl/rcs/pch+++..",
+  "j-~a +++r7",
+  "k~a r7x",
+  "l~m r19"
+],
+head: {text: "READ"},
+foot: {text: "*pp = power & performance, **earliest rcs/wl "}
+}
+</script>
+
+<script>
+var code = "{signal: [" +
+  "{}," +
+  "{name: 'BL', wave: '01....0....1..', node: '.j.............'}, {}," +
+  "{name: 'BLdiff', wave: '10........1...', node: '.k.............'}, {}," +
+  "{name: 'BLpch_b', wave: '0.1........0..', node: '..a........h....'}, {}," +
+  "{name: 'rcs', wave: '0.1.......0...', node: '..c.......f....'}, {}," +
+  "{name: 'WL', wave: '0..1.....0....', node: '...b.....g.....'}, {}," +
+  "{name: 'colpch_b', wave: '0.1........0..', node: '..d........e.........'}, {}," +
+  "{name: 'Saout', wave: '1.......0.....', node: '........i............'}, {}," +
+  "{name: 'gbpch_b', wave: '0..1.......0..', node: '...l............'}, {}," +
+  "{name: 'gbl', wave: '0...1........0', node: '....m............'}, {}" +
+"]," +
+"edge: [" +
+  "'a-~b ..++++++r1 pp','c~b r1a raw unmatched......','d~b r1b pp (rcs)','e~g r2b**','e~-f ++++r2b,r27y', 'h-~g ++++++r2 '," +
+  "'f~-h ..r2c', 'i~-g r4 90% bf wl/rcs/pch+++..', 'j-~a +++r7','k~a r7x','l~m r19'" +
+"]," +
+"head: {text: 'READ'}," +
+"foot: {text: '*pp = power & performance, **earliest rcs/wl '}" +
+"}";
+
+function showCode() {
+  var box = document.getElementById("codeBox");
+  var instruction = document.getElementById("instruction");
+  box.value = code;
+  box.style.display = "block";
+  instruction.style.display = "block";
+  box.select();
+  box.focus();
+}
+</script>
+
+</body>
+</html>
