@@ -222,9 +222,8 @@
 <script>
 var currentCode = null;
 var currentPath = null;
-var SCRIPT_VERSION = '3.1';
+var SCRIPT_VERSION = '3.2';
 
-// Simple version tracking (no reload)
 localStorage.setItem('wavedrom_lib_version', SCRIPT_VERSION);
 
 function init() {
@@ -324,7 +323,6 @@ function selectFile(path, element) {
 function loadFileContent(path) {
   console.log('Loading:', path);
   
-  // CRITICAL: Force cache bypass with timestamp + cache headers
   var cacheBuster = '?nocache=' + Date.now();
   
   fetch(path + cacheBuster, {
@@ -370,23 +368,11 @@ function openEditor() {
   }
   
   navigator.clipboard.writeText(currentCode).then(function() {
-    // Clear WaveDrom's localStorage so it doesn't show old diagram
-    var win = window.open('https://wavedrom.com/editor.html', '_blank');
-    
     alert('✅ Code copied to clipboard!\n\n👉 Paste with Cmd+V in the editor tab');
+    window.open('https://wavedrom.com/editor.html', '_blank');
   }).catch(function() {
     showCode();
     alert('Copy the code manually from the text area below');
-    window.open('https://wavedrom.com/editor.html', '_blank');
-  });
-}
-  
-  navigator.clipboard.writeText(currentCode).then(function() {
-    alert('Copied! Opening editor - paste with Cmd+V');
-    window.open('https://wavedrom.com/editor.html', '_blank');
-  }).catch(function() {
-    showCode();
-    alert('Copy the code above, then click OK');
     window.open('https://wavedrom.com/editor.html', '_blank');
   });
 }
@@ -409,7 +395,6 @@ function downloadFile() {
 window.onload = init;
 console.log('Script loaded v' + SCRIPT_VERSION);
 </script>
-
 
 </body>
 </html>
