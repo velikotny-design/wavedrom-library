@@ -222,21 +222,18 @@
 <script>
 var currentCode = null;
 var currentPath = null;
-var SCRIPT_VERSION = '3.0';
+var SCRIPT_VERSION = '3.0';  
 
-function clearCache() {
+  function clearCache() {
+  // Just update version silently, no reload
   var cachedVersion = localStorage.getItem('wavedrom_lib_version');
+  
   if (cachedVersion !== SCRIPT_VERSION) {
+    console.log('New version:', SCRIPT_VERSION);
     localStorage.setItem('wavedrom_lib_version', SCRIPT_VERSION);
-    if (!sessionStorage.getItem('cache_cleared')) {
-      sessionStorage.setItem('cache_cleared', 'true');
-      window.location.reload(true);
-      return false;
-    }
-  }
+  }  
   return true;
-}
-
+}  
 function init() {
   if (!clearCache()) return;
   
