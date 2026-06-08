@@ -33,12 +33,16 @@
     margin-top: 15px;
     margin-bottom: 5px;
     font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .folder:hover {
+    text-decoration: underline;
   }
   
   .file {
     padding: 8px 12px;
     margin: 3px 0;
-    margin-left: 10px;
     cursor: pointer;
     border-radius: 4px;
     background: white;
@@ -55,6 +59,10 @@
     background: #2196F3;
     color: white;
     border-color: #2196F3;
+  }
+  
+  #viewer {
+    margin-top: 20px;
   }
   
   .buttons {
@@ -81,6 +89,7 @@
     height: 200px;
     font-family: monospace;
     font-size: 12px;
+    display: none;
     margin-top: 10px;
   }
   
@@ -95,11 +104,25 @@
     text-align: center;
   }
   
+  .loading {
+    color: #2196F3;
+    font-style: italic;
+  }
+  
   .error {
     color: #f44336;
     padding: 10px;
     background: #ffebee;
     border-radius: 4px;
+    margin-top: 10px;
+  }
+  
+  .success {
+    color: #4CAF50;
+    padding: 10px;
+    background: #e8f5e9;
+    border-radius: 4px;
+    margin-top: 10px;
   }
 </style>
 </head>
@@ -107,115 +130,233 @@
 
 <div id="sidebar">
   <h2>📚 WaveDrom Library</h2>
-  
-  <!-- MANUAL FILE LIST - Edit this section to add your files -->
-  
-  <div class="folder">📁 memory/</div>
-  <div class="file" onclick="loadWave('memory/read_timing.json')">
-    📄 read_timing.json
-  </div>
-  
-  <div class="folder">📁 clock/</div>
-  <div class="file" onclick="loadWave('clock/basic.json')">
-    📄 basic.json
-  </div>
-  
-  <!-- Add more files here as needed -->
-  
+  <div class="loading">Scanning repository...</div>
 </div>
 
 <div id="content">
-  <h1 id="title">Select a waveform</h1>
+  <h1 id="title">WaveDrom Library Browser</h1>
+  
+  <div class="success">
+    <strong>Instructions:</strong><br>
+    - Click any .json file in the sidebar to view its waveform<br>
+    - Add new .json files to folders and they'll appear automatically<br>
+    - Supports nested folders
+  </div>
   
   <div class="buttons" id="buttons" style="display: none;">
     <button onclick="showCode()">Show Code</button>
-    <button onclick="openEditor()">Open in Editor</button>
+    <button onclick="window.open('https://wavedrom.com/editor.html', '_blank')">Open in Editor</button>
+    <button onclick="downloadSVG()">Download SVG</button>
+    <button onclick="window.open(currentFilePath, '_blank')">View Raw JSON</button>
   </div>
   
-  <textarea id="codeBox" style="display: none;"></textarea>
+  <textarea id="codeBox"></textarea>
   
   <div id="viewer">
-    <div class="empty-state">👈 Click a file to view</div>
+    <div class="empty-state">👈 Click a file from the sidebar to view its waveform</div>
   </div>
-  
-  <div id="error" style="display: none;"></div>
 </div>
 
 <script>
-var currentCode = null;
+// Configuration: Define your folder structure here
+var LIBRARY_STRUCTURE = [
+  'memory',
+  'clock',
+  'handshake',
+  'bus',
+  'setup_hold',
+  'async'
+];
 
-function loadWave(path) {
-  console.log('Loading:', path);
+var currentWaveform = null;
+var currentName = null;
+var currentFilePath = null;
+var currentRawCode = null;
+
+// Initialize: Scan the repository
+function initLibrary() {
+  var sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = '<h2>📚 WaveDrom Library</h2>';
   
-  document.getElementById('title').textContent = 'Loading ' + path + '...';
-  document.getElementById('viewer').innerHTML = '<div>Loading...</div>';
+  var foundFiles = 0;
+  var checkedFolders = 0;
+  
+  LIBRARY_STRUCTURE.forEach(function(folder) {
+    // Try to fetch the folder to see what's in it
+    scanFolder(folder, function(files) {
+      checkedFolders++;
+      
+      if (files.length > 0) {
+        foundFiles += files.length;
+        
+        // Add folder header
+        var folderDiv = document.createElement('div');
+        folderDiv.className = 'folder';
+        folderDiv.textContent = '📁 ' + folder + '/';
+        sidebar.appendChild(folderDiv);
+        
+        // Add files
+        files.forEach(function(file) {
+          var fileDiv = document.createElement('div');
+          fileDiv.className = 'file';
+          fileDiv.textContent = '📄 ' + file;
+          fileDiv.onclick = function() {
+            loadWaveform(folder + '/' + file);
+          };
+          sidebar.appendChild(fileDiv);
+        });
+      }
+      
+      // Update status after all folders checked
+      if (checkedFolders === LIBRARY_STRUCTURE.length) {
+        if (foundFiles === 0) {
+          sidebar.innerHTML += '<div class="empty-state">No .json files found.<br>Add files to: ' + 
+            LIBRARY_STRUCTURE.join(', ') + '</div>';
+        }
+      }
+    });
+  });
+}
+
+// Scan a folder for .json files using GitHub API
+function scanFolder(folder, callback) {
+  // Get the repo info from current URL
+  var isGitHubPages = window.location.hostname.includes('github.io');
+  
+  if (isGitHubPages) {
+    // Extract username and repo from github.io URL
+    // Format: username.github.io/repo-name/
+    var parts = window.location.pathname.split('/').filter(function(p) { return p; });
+    var repo = parts[0];
+    var username = window.location.hostname.split('.')[0];
+    
+    // Use GitHub API to list files
+    var apiUrl = 'https://api.github.com/repos/' + username + '/' + repo + '/contents/' + folder;
+    
+    fetch(apiUrl)
+      .then(function(response) {
+        if (!response.ok) throw new Error('Folder not found');
+        return response.json();
+      })
+      .then(function(data) {
+        var jsonFiles = data
+          .filter(function(item) { return item.name.endsWith('.json'); })
+          .map(function(item) { return item.name; });
+        callback(jsonFiles);
+      })
+      .catch(function() {
+        callback([]);
+      });
+  } else {
+    // Local development: try common filenames
+    var commonFiles = ['basic.json', 'example.json', 'test.json', 'read_timing.json', 'write_timing.json'];
+    var foundFiles = [];
+    var checked = 0;
+    
+    commonFiles.forEach(function(file) {
+      fetch(folder + '/' + file, {method: 'HEAD'})
+        .then(function(response) {
+          if (response.ok) foundFiles.push(file);
+        })
+        .catch(function() {})
+        .finally(function() {
+          checked++;
+          if (checked === commonFiles.length) {
+            callback(foundFiles);
+          }
+        });
+    });
+  }
+}
+
+function loadWaveform(path) {
+  currentName = path;
+  currentFilePath = path;
+  
+  // Update title
+  document.getElementById('title').innerHTML = '<span class="loading">Loading ' + path + '...</span>';
+  
+  // Clear viewer
+  var viewer = document.getElementById('viewer');
+  viewer.innerHTML = '<div class="loading">Loading waveform...</div>';
+  
+  // Hide buttons and code
   document.getElementById('buttons').style.display = 'none';
   document.getElementById('codeBox').style.display = 'none';
-  document.getElementById('error').style.display = 'none';
   
-  // Clear active state
-  var files = document.querySelectorAll('.file');
-  files.forEach(function(f) { f.classList.remove('active'); });
-  event.target.classList.add('active');
-  
-  // Fetch the file
+  // Fetch the JSON file
   fetch(path)
     .then(function(response) {
-      console.log('Response status:', response.status);
-      if (!response.ok) throw new Error('File not found');
+      if (!response.ok) {
+        throw new Error('File not found: ' + path);
+      }
       return response.text();
     })
     .then(function(text) {
-      console.log('Loaded:', text.substring(0, 50));
-      currentCode = text;
+      // Store raw code
+      currentRawCode = text;
       
-      // Parse JSON
-      var waveform;
+      // Parse JSON (try strict first, then relaxed)
       try {
-        waveform = JSON.parse(text);
+        currentWaveform = JSON.parse(text);
       } catch(e) {
-        waveform = eval('(' + text + ')');
+        // Try eval for relaxed WaveDrom syntax
+        try {
+          currentWaveform = eval('(' + text + ')');
+        } catch(e2) {
+          throw new Error('Invalid JSON format');
+        }
       }
       
-      // Render
+      // Update title
       document.getElementById('title').textContent = path;
-      document.getElementById('viewer').innerHTML = '<div id="wave"></div>';
+      
+      // Show buttons
       document.getElementById('buttons').style.display = 'block';
       
-      WaveDrom.RenderWaveForm(0, waveform, 'wave');
+      // Clear and render
+      viewer.innerHTML = '<div id="wave"></div>';
+      WaveDrom.RenderWaveForm(0, currentWaveform, "wave");
+      
+      // Update active file in sidebar
+      var files = document.querySelectorAll('.file');
+      files.forEach(function(f) { f.classList.remove('active'); });
+      
+      // Find and highlight the active file
+      files.forEach(function(f) {
+        if (f.textContent.includes(path.split('/').pop())) {
+          f.classList.add('active');
+        }
+      });
     })
     .catch(function(error) {
-      console.error('Error:', error);
+      viewer.innerHTML = '<div class="error">❌ Error loading waveform: ' + error.message + '</div>';
       document.getElementById('title').textContent = 'Error';
-      document.getElementById('error').style.display = 'block';
-      document.getElementById('error').className = 'error';
-      document.getElementById('error').textContent = 'Error loading ' + path + ': ' + error.message;
     });
 }
 
 function showCode() {
   var box = document.getElementById('codeBox');
-  if (currentCode) {
-    box.value = currentCode;
-    box.style.display = 'block';
-    box.select();
+  box.value = currentRawCode;
+  box.style.display = 'block';
+  box.select();
+}
+
+function downloadSVG() {
+  var svg = document.querySelector('#wave svg');
+  if (svg) {
+    var svgData = new XMLSerializer().serializeToString(svg);
+    var blob = new Blob([svgData], {type: 'image/svg+xml'});
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = currentName.replace('/', '_').replace('.json', '.svg');
+    link.click();
   }
 }
 
-function openEditor() {
-  if (currentCode) {
-    navigator.clipboard.writeText(currentCode).then(function() {
-      alert('Code copied! Opening editor - paste with Cmd+V');
-      window.open('https://wavedrom.com/editor.html', '_blank');
-    }).catch(function() {
-      showCode();
-      alert('Copy the code above, then click OK to open editor');
-      window.open('https://wavedrom.com/editor.html', '_blank');
-    });
-  }
-}
-
-console.log('Script loaded');
+// Start scanning when page loads
+window.onload = initLibrary;
 </script>
 
 </body>
