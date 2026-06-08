@@ -38,15 +38,19 @@ var params = new URLSearchParams(window.location.search);
 var code = params.get('code');
 var filepath = params.get('file');
 
-if (code) {
-  document.getElementById('editor').value = decodeURIComponent(code);
-  if (filepath) {
-    document.getElementById('filename').textContent = '📄 Editing: ' + decodeURIComponent(filepath);
+// Wait for WaveDrom to fully load
+window.onload = function() {
+  if (code) {
+    document.getElementById('editor').value = decodeURIComponent(code);
+    if (filepath) {
+      document.getElementById('filename').textContent = '📄 Editing: ' + decodeURIComponent(filepath);
+    }
+    // Delay render to ensure WaveDrom is ready
+    setTimeout(render, 100);
+  } else {
+    document.getElementById('filename').textContent = '📄 New file';
   }
-  render();
-} else {
-  document.getElementById('filename').textContent = '📄 New file';
-}
+};
 
 function render() {
   var code = document.getElementById('editor').value.trim();
@@ -59,13 +63,21 @@ function render() {
   
   try {
     var waveform = JSON.parse(code);
-    document.getElementById('wave').innerHTML = '';
-    WaveDrom.RenderWaveForm(0, waveform, 'wave');
+    
+    // Validate waveform has required structure
+    if (!waveform.signal || !Array.isArray(waveform.signal)) {
+      throw new Error('JSON must have a "signal" array');
+    }
+    
+    document.getElementById('wave').innerHTML = '<div id="waveform"></div>';
+    WaveDrom.RenderWaveForm(0, waveform, 'waveform');
     document.getElementById('info').textContent = '✅ Rendered successfully';
     document.getElementById('info').style.color = '#4CAF50';
   } catch(e) {
-    document.getElementById('info').textContent = '❌ Invalid JSON: ' + e.message;
+    document.getElementById('wave').innerHTML = '';
+    document.getElementById('info').textContent = '❌ Error: ' + e.message;
     document.getElementById('info').style.color = '#f44336';
+    console.error('Render error:', e);
   }
 }
 
@@ -87,7 +99,7 @@ function downloadJSON() {
   link.click();
   URL.revokeObjectURL(url);
   
-  document.getElementById('info').textContent = '💾 Downloaded: ' + filename + ' → Now upload to GitHub to save changes';
+  document.getElementById('info').textContent = '💾 Downloaded: ' + filename + ' → Upload to GitHub to save';
   document.getElementById('info').style.color = '#4CAF50';
 }
 
@@ -103,7 +115,7 @@ function copyToClipboard() {
     document.getElementById('info').textContent = '✅ Copied to clipboard!';
     document.getElementById('info').style.color = '#4CAF50';
   }).catch(function() {
-    alert('Failed to copy. Please select all (Cmd+A) and copy manually (Cmd+C)');
+    alert('Copy failed. Select all (Cmd+A) and copy manually');
   });
 }
 
@@ -114,6 +126,7 @@ document.getElementById('editor').addEventListener('input', function() {
   renderTimeout = setTimeout(render, 1000);
 });
 </script>
+
 
 </body>
 </html>
