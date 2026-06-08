@@ -369,6 +369,21 @@ function openEditor() {
     return;
   }
   
+  // Try URL hash method
+  try {
+    var encoded = encodeURIComponent(currentCode);
+    var url = 'https://wavedrom.com/editor.html#' + encoded;
+    window.open(url, '_blank');
+  } catch(e) {
+    // Fallback to copy method
+    navigator.clipboard.writeText(currentCode).then(function() {
+      alert('Copied! Opening editor - paste with Cmd+V');
+      window.open('https://wavedrom.com/editor.html', '_blank');
+    });
+  }
+}
+
+  
   navigator.clipboard.writeText(currentCode).then(function() {
     alert('Copied! Opening editor - paste with Cmd+V');
     window.open('https://wavedrom.com/editor.html', '_blank');
