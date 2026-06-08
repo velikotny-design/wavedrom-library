@@ -97,7 +97,6 @@
     color: #999;
     font-style: italic;
     margin-top: 50px;
-    text-align: center;
   }
   
   .loading {
@@ -121,8 +120,12 @@
     margin-top: 10px;
   }
   
-  .nested {
-    margin-left: 20px;
+  .debug-info {
+    background: #fff3cd;
+    padding: 10px;
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 11px;
   }
 </style>
 </head>
@@ -130,7 +133,8 @@
 
 <div id="sidebar">
   <h2>📚 WaveDrom Library</h2>
-  <div class="loading">Scanning repository...</div>
+  <div class="loading">Initializing...</div>
+  <div id="debugInfo" class="debug-info"></div>
 </div>
 
 <div id="content">
@@ -147,7 +151,6 @@
     <button onclick="showCode()">Show Code</button>
     <button onclick="openEditor()">Open in Editor</button>
     <button onclick="downloadSVG()">Download SVG</button>
-    <button onclick="window.open(currentFileURL, '_blank')">View Raw JSON</button>
   </div>
   
   <textarea id="codeBox"></textarea>
@@ -159,138 +162,139 @@
 
 <script>
 var currentWaveform = null;
-var currentName = null;
-var currentFilePath = null;
-var currentFileURL = null;
 var currentRawCode = null;
 var repoOwner = '';
 var repoName = '';
-var baseURL = '';
+
+function log(msg) {
+  var debugDiv = document.getElementById('debugInfo');
+  debugDiv.innerHTML += msg + '<br>';
+  console.log(msg);
+}
 
 function initLibrary() {
-  var isGitHubPages = window.location.hostname.includes('github.io');
+  log('Starting initialization...');
   
-  if (isGitHubPages) {
-    var pathParts = window.location.pathname.split('/').filter(function(p) { return p; });
-    repoOwner = window.location.hostname.split('.')[0];
-    repoName = pathParts[0] || repoOwner;
-    baseURL = '/' + repoName + '/';
+  var hostname = window.location.hostname;
+  var pathname = window.location.pathname;
+  
+  log('Hostname: ' + hostname);
+  log('Pathname: ' + pathname);
+  
+  if (hostname.includes('github.io')) {
+    var pathParts = pathname.split('/').filter(function(p) { return p; });
+    repoOwner = hostname.split('.')[0];
+    repoName = pathParts[0] || '';
     
-    console.log('Owner: ' + repoOwner + ', Repo: ' + repoName);
+    log('Detected GitHub Pages');
+    log('Owner: ' + repoOwner);
+    log('Repo: ' + repoName);
     
-    scanGitHubDirectory('', function(tree) {
-      renderTree(tree);
-    });
+    if (!repoName) {
+      showError('Cannot detect repository name from URL');
+      return;
+    }
+    
+    var apiUrl = 'https://api.github.com/repos/' + repoOwner + '/' + repoName + '/git/trees/main?recursive=1';
+    log('API URL: ' + apiUrl);
+    
+    fetch(apiUrl)
+      .then(function(response) {
+        log('API Response status: ' + response.status);
+        if (!response.ok) {
+          throw new Error('API returned ' + response.status);
+        }
+        return response.json();
+      })
+      .then(function(data) {
+        log('API returned ' + data.tree.length + ' items');
+        buildTreeFromAPI(data.tree);
+      })
+      .catch(function(error) {
+        log('ERROR: ' + error.message);
+        showError('Failed to scan repository: ' + error.message);
+      });
   } else {
-    document.getElementById('sidebar').innerHTML = 
-      '<h2>📚 WaveDrom Library</h2>' +
-      '<div class="error">' +
-      '<strong>⚠️ Local Mode</strong><br>' +
-      'Auto-discovery only works on GitHub Pages.' +
-      '</div>';
+    log('Not on GitHub Pages - using manual mode');
+    showManualMode();
   }
 }
 
-function scanGitHubDirectory(path, callback) {
-  var apiUrl = 'https://api.github.com/repos/' + repoOwner + '/' + repoName + '/contents/' + path;
+function buildTreeFromAPI(items) {
+  var tree = {};
+  var jsonFiles = [];
   
-  fetch(apiUrl)
-    .then(function(response) {
-      if (!response.ok) throw new Error('Cannot access repo');
-      return response.json();
-    })
-    .then(function(items) {
-      var tree = {folders: {}, files: []};
-      var pending = 0;
-      var processed = 0;
-      
-      items.forEach(function(item) {
-        if (item.name.startsWith('.') || item.name === 'index.html' || item.name === 'viewer.html') {
-          return;
-        }
-        
-        if (item.type === 'file' && item.name.endsWith('.json')) {
-          tree.files.push({
-            name: item.name,
-            path: item.path,
-            download_url: item.download_url
-          });
-        } else if (item.type === 'dir') {
-          pending++;
-          scanGitHubDirectory(item.path, function(subTree) {
-            tree.folders[item.name] = subTree;
-            processed++;
-            if (processed === pending) {
-              callback(tree);
-            }
-          });
-        }
-      });
-      
-      if (pending === 0) {
-        callback(tree);
+  items.forEach(function(item) {
+    if (item.type === 'blob' && item.path.endsWith('.json') && 
+        item.path !== 'package.json' && 
+        !item.path.includes('node_modules')) {
+      jsonFiles.push(item.path);
+    }
+  });
+  
+  log('Found ' + jsonFiles.length + ' JSON files');
+  
+  jsonFiles.forEach(function(path) {
+    var parts = path.split('/');
+    var current = tree;
+    
+    for (var i = 0; i < parts.length - 1; i++) {
+      var folder = parts[i];
+      if (!current[folder]) {
+        current[folder] = {};
       }
-    })
-    .catch(function(error) {
-      console.error('Error scanning:', error);
-      callback({folders: {}, files: []});
-    });
+      current = current[folder];
+    }
+    
+    var filename = parts[parts.length - 1];
+    if (!current.__files) {
+      current.__files = [];
+    }
+    current.__files.push({name: filename, path: path});
+  });
+  
+  renderTree(tree);
 }
 
-function renderTree(tree, parentElement, basePath) {
+function renderTree(tree, parentElement, level) {
   if (!parentElement) {
     parentElement = document.getElementById('sidebar');
     parentElement.innerHTML = '<h2>📚 WaveDrom Library</h2>';
+    level = 0;
   }
   
-  if (!basePath) {
-    basePath = '';
-  }
+  var folders = Object.keys(tree).filter(function(k) { return k !== '__files'; }).sort();
   
-  var totalFiles = 0;
-  
-  var folderNames = Object.keys(tree.folders).sort();
-  folderNames.forEach(function(folderName) {
+  folders.forEach(function(folder) {
     var folderDiv = document.createElement('div');
     folderDiv.className = 'folder';
-    folderDiv.textContent = '📁 ' + folderName + '/';
+    folderDiv.style.marginLeft = (level * 10) + 'px';
+    folderDiv.textContent = '📁 ' + folder + '/';
     parentElement.appendChild(folderDiv);
     
-    var containerDiv = document.createElement('div');
-    containerDiv.className = 'nested';
-    parentElement.appendChild(containerDiv);
+    renderTree(tree[folder], parentElement, level + 1);
+  });
+  
+  if (tree.__files) {
+    tree.__files.sort(function(a, b) {
+      return a.name.localeCompare(b.name);
+    });
     
-    var subTree = tree.folders[folderName];
-    var count = renderTree(subTree, containerDiv, basePath + folderName + '/');
-    totalFiles += count;
-  });
-  
-  tree.files.sort(function(a, b) {
-    return a.name.localeCompare(b.name);
-  });
-  
-  tree.files.forEach(function(file) {
-    var fileDiv = document.createElement('div');
-    fileDiv.className = 'file';
-    fileDiv.textContent = '📄 ' + file.name;
-    fileDiv.onclick = function(e) {
-      loadWaveform(file.path, file.download_url, e.target);
-    };
-    parentElement.appendChild(fileDiv);
-    totalFiles++;
-  });
-  
-  if (totalFiles === 0 && !basePath) {
-    parentElement.innerHTML += '<div class="empty-state">No .json files found</div>';
+    tree.__files.forEach(function(file) {
+      var fileDiv = document.createElement('div');
+      fileDiv.className = 'file';
+      fileDiv.style.marginLeft = (level * 10 + 10) + 'px';
+      fileDiv.textContent = '📄 ' + file.name;
+      fileDiv.onclick = function() {
+        loadWaveform(file.path);
+      };
+      parentElement.appendChild(fileDiv);
+    });
   }
-  
-  return totalFiles;
 }
 
-function loadWaveform(path, downloadURL, element) {
-  currentName = path;
-  currentFilePath = path;
-  currentFileURL = downloadURL || (baseURL + path);
+function loadWaveform(path) {
+  log('Loading: ' + path);
   
   document.getElementById('title').innerHTML = '<span class="loading">Loading ' + path + '...</span>';
   
@@ -300,27 +304,28 @@ function loadWaveform(path, downloadURL, element) {
   document.getElementById('buttons').style.display = 'none';
   document.getElementById('codeBox').style.display = 'none';
   
-  var fetchURL = downloadURL || (baseURL + path);
-  console.log('Fetching from:', fetchURL);
+  var rawUrl = 'https://raw.githubusercontent.com/' + repoOwner + '/' + repoName + '/main/' + path;
+  log('Fetching: ' + rawUrl);
   
-  fetch(fetchURL)
+  fetch(rawUrl)
     .then(function(response) {
       if (!response.ok) {
-        throw new Error('File not found: ' + response.status);
+        throw new Error('HTTP ' + response.status);
       }
       return response.text();
     })
     .then(function(text) {
+      log('Loaded ' + text.length + ' bytes');
       currentRawCode = text;
-      console.log('Loaded code:', text.substring(0, 100));
       
       try {
         currentWaveform = JSON.parse(text);
       } catch(e) {
+        log('JSON parse failed, trying eval');
         try {
           currentWaveform = eval('(' + text + ')');
         } catch(e2) {
-          throw new Error('Invalid JSON: ' + e2.message);
+          throw new Error('Cannot parse: ' + e2.message);
         }
       }
       
@@ -328,54 +333,65 @@ function loadWaveform(path, downloadURL, element) {
       document.getElementById('buttons').style.display = 'block';
       
       viewer.innerHTML = '<div id="wave"></div>';
-      WaveDrom.RenderWaveForm(0, currentWaveform, "wave");
+      
+      try {
+        WaveDrom.RenderWaveForm(0, currentWaveform, "wave");
+        log('Rendered successfully');
+      } catch(e) {
+        throw new Error('Render failed: ' + e.message);
+      }
       
       var files = document.querySelectorAll('.file');
       files.forEach(function(f) { f.classList.remove('active'); });
-      if (element) element.classList.add('active');
+      event.target.classList.add('active');
     })
     .catch(function(error) {
-      console.error('Error:', error);
-      viewer.innerHTML = '<div class="error">❌ Error: ' + error.message + '</div>';
-      document.getElementById('title').textContent = 'Error';
+      log('ERROR: ' + error.message);
+      viewer.innerHTML = '<div class="error">❌ ' + error.message + '</div>';
     });
 }
 
 function showCode() {
+  if (!currentRawCode) return;
   var box = document.getElementById('codeBox');
-  box.value = currentRawCode || 'No code loaded';
+  box.value = currentRawCode;
   box.style.display = 'block';
   box.select();
 }
 
 function openEditor() {
-  if (!currentRawCode) {
-    alert('No code loaded yet');
-    return;
-  }
-  
-  var cleanCode = currentRawCode.trim();
-  navigator.clipboard.writeText(cleanCode).then(function() {
-    alert('✅ Code copied to clipboard!\n\nNow opening editor - paste with Cmd+V');
-    window.open('https://wavedrom.com/editor.html', '_blank');
-  }).catch(function() {
-    showCode();
-    alert('Copy the code manually and then click OK to open the editor');
-    window.open('https://wavedrom.com/editor.html', '_blank');
-  });
+  if (!currentRawCode) return;
+  var encoded = encodeURIComponent(currentRawCode);
+  window.open('https://wavedrom.com/editor.html#' + encoded, '_blank');
 }
 
 function downloadSVG() {
   var svg = document.querySelector('#wave svg');
-  if (svg) {
-    var svgData = new XMLSerializer().serializeToString(svg);
-    var blob = new Blob([svgData], {type: 'image/svg+xml'});
-    var url = URL.createObjectURL(blob);
-    var link = document.createElement('a');
-    link.href = url;
-    link.download = currentName.replace('/', '_').replace('.json', '.svg');
-    link.click();
-  }
+  if (!svg) return;
+  var svgData = new XMLSerializer().serializeToString(svg);
+  var blob = new Blob([svgData], {type: 'image/svg+xml'});
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = 'waveform.svg';
+  link.click();
+}
+
+function showError(msg) {
+  document.getElementById('sidebar').innerHTML = 
+    '<h2>📚 WaveDrom Library</h2>' +
+    '<div class="error">' + msg + '</div>' +
+    '<div id="debugInfo" class="debug-info"></div>';
+}
+
+function showManualMode() {
+  document.getElementById('sidebar').innerHTML = 
+    '<h2>📚 WaveDrom Library</h2>' +
+    '<div class="error">' +
+    '<strong>⚠️ Local Mode</strong><br>' +
+    'Auto-discovery only works on GitHub Pages.<br><br>' +
+    'Deploy to: https://github.com/settings (enable Pages)' +
+    '</div>';
 }
 
 window.onload = initLibrary;
