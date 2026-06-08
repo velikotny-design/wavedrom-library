@@ -38,6 +38,7 @@
   .file {
     padding: 8px 12px;
     margin: 3px 0;
+    margin-left: 10px;
     cursor: pointer;
     border-radius: 4px;
     background: white;
@@ -98,39 +99,55 @@
     margin-top: 50px;
     text-align: center;
   }
+  
+  .loading {
+    color: #2196F3;
+    font-style: italic;
+  }
+  
+  .error {
+    color: #f44336;
+    padding: 10px;
+    background: #ffebee;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+  
+  .success {
+    color: #4CAF50;
+    padding: 10px;
+    background: #e8f5e9;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+  
+  .nested {
+    margin-left: 20px;
+  }
 </style>
 </head>
 <body>
 
 <div id="sidebar">
   <h2>📚 WaveDrom Library</h2>
-  
-  <div class="folder">📁 memory/</div>
-  <div class="file" onclick="loadWaveform('memory/read_timing')">
-    📄 read_timing.json
-  </div>
-  
-  <div class="folder">📁 clock/</div>
-  <div class="file" onclick="loadWaveform('clock/basic')">
-    📄 basic.json
-  </div>
-  <div class="file" onclick="loadWaveform('clock/gated')">
-    📄 gated.json
-  </div>
-  
-  <div class="folder">📁 handshake/</div>
-  <div class="file" onclick="loadWaveform('handshake/two_phase')">
-    📄 two_phase.json
-  </div>
+  <div class="loading">Scanning repository...</div>
 </div>
 
 <div id="content">
-  <h1 id="title">Select a waveform to view</h1>
+  <h1 id="title">WaveDrom Library Browser</h1>
+  
+  <div class="success">
+    <strong>✨ Fully Automatic</strong><br>
+    - Discovers all .json files automatically<br>
+    - Scans all directories recursively<br>
+    - Just add files and refresh!
+  </div>
   
   <div class="buttons" id="buttons" style="display: none;">
     <button onclick="showCode()">Show Code</button>
     <button onclick="window.open('https://wavedrom.com/editor.html', '_blank')">Open in Editor</button>
     <button onclick="downloadSVG()">Download SVG</button>
+    <button onclick="window.open(currentFilePath, '_blank')">View Raw JSON</button>
   </div>
   
   <textarea id="codeBox"></textarea>
@@ -141,93 +158,211 @@
 </div>
 
 <script>
-// Store all your waveforms here
-var waveforms = {
-  'memory/read_timing': {
-    signal: [
-      {},
-      {name: "BL", wave: "01....0....1..", node: ".j............."}, {},
-      {name: "BLdiff", wave: "10........1...", node: ".k............."}, {},
-      {name: "BLpch_b", wave: "0.1........0..", node: "..a........h...."}, {},
-      {name: "rcs", wave: "0.1.......0...", node: "..c.......f...."}, {},
-      {name: "WL", wave: "0..1.....0....", node: "...b.....g....."}, {},
-      {name: "colpch_b", wave: "0.1........0..", node: "..d........e........."}, {},
-      {name: "Saout", wave: "1.......0.....", node: "........i............"}, {},
-      {name: "gbpch_b", wave: "0..1.......0..", node: "...l............"}, {},
-      {name: "gbl", wave: "0...1........0", node: "....m............"}, {}
-    ],
-    edge: [
-      "a-~b ..++++++r1 pp",
-      "c~b r1a raw unmatched......",
-      "d~b r1b pp (rcs)",
-      "e~g r2b**",
-      "e~-f ++++r2b,r27y",
-      "h-~g ++++++r2 ",
-      "f~-h ..r2c",
-      "i~-g r4 90% bf wl/rcs/pch+++..",
-      "j-~a +++r7",
-      "k~a r7x",
-      "l~m r19"
-    ],
-    head: {text: "READ"},
-    foot: {text: "*pp = power & performance, **earliest rcs/wl "}
-  },
-  
-  'clock/basic': {
-    signal: [
-      {name: "clk", wave: "p......."},
-      {name: "data", wave: "x.345x..", data: ["A", "B", "C"]}
-    ]
-  },
-  
-  'clock/gated': {
-    signal: [
-      {name: "clk", wave: "p......."},
-      {name: "enable", wave: "01....0."},
-      {name: "gated_clk", wave: "p.1010.."}
-    ]
-  },
-  
-  'handshake/two_phase': {
-    signal: [
-      {name: "req", wave: "01.0.1.0"},
-      {name: "ack", wave: "0.1.0.1."}
-    ]
-  }
-};
-
 var currentWaveform = null;
 var currentName = null;
+var currentFilePath = null;
+var currentRawCode = null;
+var repoOwner = '';
+var repoName = '';
 
-function loadWaveform(name) {
-  currentName = name;
-  currentWaveform = waveforms[name];
+// Initialize: Auto-discover everything
+function initLibrary() {
+  // Detect if we're on GitHub Pages
+  var isGitHubPages = window.location.hostname.includes('github.io');
+  
+  if (isGitHubPages) {
+    // Extract repo info from URL
+    // Format: username.github.io/repo-name/
+    var parts = window.location.pathname.split('/').filter(function(p) { return p; });
+    repoOwner = window.location.hostname.split('.')[0];
+    repoName = parts[0] || repoOwner; // fallback to owner if no repo name
+    
+    console.log('Detected GitHub Pages: ' + repoOwner + '/' + repoName);
+    
+    // Scan the repository root
+    scanGitHubDirectory('', function(tree) {
+      renderTree(tree);
+    });
+  } else {
+    // Local development mode
+    document.getElementById('sidebar').innerHTML = 
+      '<h2>📚 WaveDrom Library</h2>' +
+      '<div class="error">' +
+      '<strong>⚠️ Local Mode</strong><br>' +
+      'Auto-discovery only works on GitHub Pages.<br><br>' +
+      'Deploy to GitHub Pages or add files manually below.' +
+      '</div>';
+  }
+}
+
+// Scan GitHub directory recursively
+function scanGitHubDirectory(path, callback) {
+  var apiUrl = 'https://api.github.com/repos/' + repoOwner + '/' + repoName + '/contents/' + path;
+  
+  fetch(apiUrl)
+    .then(function(response) {
+      if (!response.ok) throw new Error('Cannot access repo');
+      return response.json();
+    })
+    .then(function(items) {
+      var tree = {folders: {}, files: []};
+      var pending = 0;
+      var processed = 0;
+      
+      // First pass: identify files and folders
+      items.forEach(function(item) {
+        // Skip hidden files and index.html
+        if (item.name.startsWith('.') || item.name === 'index.html') {
+          return;
+        }
+        
+        if (item.type === 'file' && item.name.endsWith('.json')) {
+          tree.files.push({
+            name: item.name,
+            path: item.path
+          });
+        } else if (item.type === 'dir') {
+          pending++;
+          scanGitHubDirectory(item.path, function(subTree) {
+            tree.folders[item.name] = subTree;
+            processed++;
+            if (processed === pending) {
+              callback(tree);
+            }
+          });
+        }
+      });
+      
+      // If no subdirectories, callback immediately
+      if (pending === 0) {
+        callback(tree);
+      }
+    })
+    .catch(function(error) {
+      console.error('Error scanning ' + path + ':', error);
+      callback({folders: {}, files: []});
+    });
+}
+
+// Render the tree structure in sidebar
+function renderTree(tree, parentElement, basePath) {
+  if (!parentElement) {
+    parentElement = document.getElementById('sidebar');
+    parentElement.innerHTML = '<h2>📚 WaveDrom Library</h2>';
+  }
+  
+  if (!basePath) {
+    basePath = '';
+  }
+  
+  var totalFiles = 0;
+  
+  // Render folders (sorted alphabetically)
+  var folderNames = Object.keys(tree.folders).sort();
+  folderNames.forEach(function(folderName) {
+    var folderDiv = document.createElement('div');
+    folderDiv.className = 'folder';
+    folderDiv.textContent = '📁 ' + folderName + '/';
+    parentElement.appendChild(folderDiv);
+    
+    var containerDiv = document.createElement('div');
+    containerDiv.className = 'nested';
+    parentElement.appendChild(containerDiv);
+    
+    var subTree = tree.folders[folderName];
+    var count = renderTree(subTree, containerDiv, basePath + folderName + '/');
+    totalFiles += count;
+  });
+  
+  // Render files (sorted alphabetically)
+  tree.files.sort(function(a, b) {
+    return a.name.localeCompare(b.name);
+  });
+  
+  tree.files.forEach(function(file) {
+    var fileDiv = document.createElement('div');
+    fileDiv.className = 'file';
+    fileDiv.textContent = '📄 ' + file.name;
+    fileDiv.onclick = function(e) {
+      loadWaveform(file.path, e.target);
+    };
+    parentElement.appendChild(fileDiv);
+    totalFiles++;
+  });
+  
+  // Show empty message if no files found
+  if (totalFiles === 0 && !basePath) {
+    parentElement.innerHTML += '<div class="empty-state">No .json files found in repository</div>';
+  }
+  
+  return totalFiles;
+}
+
+function loadWaveform(path, element) {
+  currentName = path;
+  currentFilePath = path;
   
   // Update title
-  document.getElementById('title').textContent = name + '.json';
-  
-  // Show buttons
-  document.getElementById('buttons').style.display = 'block';
+  document.getElementById('title').innerHTML = '<span class="loading">Loading ' + path + '...</span>';
   
   // Clear viewer
   var viewer = document.getElementById('viewer');
-  viewer.innerHTML = '<div id="wave"></div>';
+  viewer.innerHTML = '<div class="loading">Loading waveform...</div>';
   
-  // Render waveform
-  WaveDrom.RenderWaveForm(0, currentWaveform, "wave");
-  
-  // Update active file in sidebar
-  var files = document.querySelectorAll('.file');
-  files.forEach(function(f) { f.classList.remove('active'); });
-  event.target.classList.add('active');
-  
-  // Hide code box
+  // Hide buttons and code
+  document.getElementById('buttons').style.display = 'none';
   document.getElementById('codeBox').style.display = 'none';
+  
+  // Fetch the JSON file
+  fetch(path)
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error('File not found: ' + path);
+      }
+      return response.text();
+    })
+    .then(function(text) {
+      // Store raw code
+      currentRawCode = text;
+      
+      // Parse JSON (try strict first, then relaxed)
+      try {
+        currentWaveform = JSON.parse(text);
+      } catch(e) {
+        // Try eval for relaxed WaveDrom syntax
+        try {
+          currentWaveform = eval('(' + text + ')');
+        } catch(e2) {
+          throw new Error('Invalid JSON format: ' + e2.message);
+        }
+      }
+      
+      // Update title
+      document.getElementById('title').textContent = path;
+      
+      // Show buttons
+      document.getElementById('buttons').style.display = 'block';
+      
+      // Clear and render
+      viewer.innerHTML = '<div id="wave"></div>';
+      WaveDrom.RenderWaveForm(0, currentWaveform, "wave");
+      
+      // Update active file in sidebar
+      var files = document.querySelectorAll('.file');
+      files.forEach(function(f) { f.classList.remove('active'); });
+      if (element) {
+        element.classList.add('active');
+      }
+    })
+    .catch(function(error) {
+      viewer.innerHTML = '<div class="error">❌ Error loading waveform: ' + error.message + '</div>';
+      document.getElementById('title').textContent = 'Error';
+    });
 }
 
 function showCode() {
   var box = document.getElementById('codeBox');
-  box.value = JSON.stringify(currentWaveform, null, 2);
+  box.value = currentRawCode;
   box.style.display = 'block';
   box.select();
 }
@@ -240,10 +375,15 @@ function downloadSVG() {
     var url = URL.createObjectURL(blob);
     var link = document.createElement('a');
     link.href = url;
-    link.download = currentName.replace('/', '_') + '.svg';
+    link.download = currentName.replace(/\//g, '_').replace('.json', '.svg');
     link.click();
   }
 }
+
+// Initialize on page load
+window.onload = function() {
+  initLibrary();
+};
 </script>
 
 </body>
