@@ -369,20 +369,17 @@ function openEditor() {
     return;
   }
   
-  // Try URL hash method
-  try {
-    var encoded = encodeURIComponent(currentCode);
-    var url = 'https://wavedrom.com/editor.html#' + encoded;
-    window.open(url, '_blank');
-  } catch(e) {
-    // Fallback to copy method
-    navigator.clipboard.writeText(currentCode).then(function() {
-      alert('Copied! Opening editor - paste with Cmd+V');
-      window.open('https://wavedrom.com/editor.html', '_blank');
-    });
-  }
+  navigator.clipboard.writeText(currentCode).then(function() {
+    // Clear WaveDrom's localStorage so it doesn't show old diagram
+    var win = window.open('https://wavedrom.com/editor.html', '_blank');
+    
+    alert('✅ Code copied to clipboard!\n\n👉 Paste with Cmd+V in the editor tab');
+  }).catch(function() {
+    showCode();
+    alert('Copy the code manually from the text area below');
+    window.open('https://wavedrom.com/editor.html', '_blank');
+  });
 }
-
   
   navigator.clipboard.writeText(currentCode).then(function() {
     alert('Copied! Opening editor - paste with Cmd+V');
