@@ -101,27 +101,18 @@
     background: #ffebee;
     border-radius: 4px;
   }
+  
+  .loading {
+    color: #2196F3;
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
 
 <div id="sidebar">
   <h2>📚 WaveDrom Library</h2>
-  
-  <!-- MANUAL FILE LIST - Edit this section to add your files -->
-  
-  <div class="folder">📁 memory/</div>
-  <div class="file" onclick="loadWave('memory/read_timing.json')">
-    📄 read_timing.json
-  </div>
-  
-  <div class="folder">📁 clock/</div>
-  <div class="file" onclick="loadWave('clock/basic.json')">
-    📄 basic.json
-  </div>
-  
-  <!-- Add more files here as needed -->
-  
+  <div class="loading">Scanning...</div>
 </div>
 
 <div id="content">
@@ -144,11 +135,100 @@
 <script>
 var currentCode = null;
 
-function loadWave(path) {
+// Auto-discover files on GitHub Pages
+function init() {
+  console.log('Initializing...');
+  console.log('URL:', window.location.href);
+  
+  // Extract repo info
+  var pathParts = window.location.pathname.split('/').filter(function(p) { return p && p !== 'index.html'; });
+  var owner = window.location.hostname.split('.')[0];
+  var repo = pathParts[0];
+  
+  console.log('Owner:', owner);
+  console.log('Repo:', repo);
+  
+  if (!repo) {
+    console.error('Cannot detect repo name');
+    showManual();
+    return;
+  }
+  
+  // Use GitHub API to get file tree
+  var apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/git/trees/main?recursive=1';
+  console.log('API:', apiUrl);
+  
+  fetch(apiUrl)
+    .then(function(res) {
+      console.log('API status:', res.status);
+      if (!res.ok) throw new Error('API failed: ' + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      console.log('Got', data.tree.length, 'items');
+      
+      // Find all .json files
+      var jsonFiles = data.tree.filter(function(item) {
+        return item.type === 'blob' && 
+               item.path.endsWith('.json') && 
+               item.path !== 'package.json' &&
+               !item.path.includes('node_modules');
+      });
+      
+      console.log('Found', jsonFiles.length, 'JSON files');
+      
+      // Build tree structure
+      var tree = {};
+      jsonFiles.forEach(function(file) {
+        var parts = file.path.split('/');
+        var folder = parts.length > 1 ? parts[0] : 'root';
+        
+        if (!tree[folder]) {
+          tree[folder] = [];
+        }
+        tree[folder].push(file.path);
+      });
+      
+      // Render sidebar
+      var sidebar = document.getElementById('sidebar');
+      sidebar.innerHTML = '<h2>📚 WaveDrom Library</h2>';
+      
+      var folders = Object.keys(tree).sort();
+      folders.forEach(function(folder) {
+        var folderDiv = document.createElement('div');
+        folderDiv.className = 'folder';
+        folderDiv.textContent = '📁 ' + folder + '/';
+        sidebar.appendChild(folderDiv);
+        
+        tree[folder].sort().forEach(function(path) {
+          var filename = path.split('/').pop();
+          var fileDiv = document.createElement('div');
+          fileDiv.className = 'file';
+          fileDiv.textContent = '📄 ' + filename;
+          fileDiv.onclick = function() {
+            loadWave(path, fileDiv);
+          };
+          sidebar.appendChild(fileDiv);
+        });
+      });
+    })
+    .catch(function(err) {
+      console.error('Error:', err);
+      showManual();
+    });
+}
+
+function showManual() {
+  var sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = '<h2>📚 WaveDrom Library</h2>' +
+    '<div class="error">Auto-discovery failed.<br>Add files manually in the HTML.</div>';
+}
+
+function loadWave(path, element) {
   console.log('Loading:', path);
   
   document.getElementById('title').textContent = 'Loading ' + path + '...';
-  document.getElementById('viewer').innerHTML = '<div>Loading...</div>';
+  document.getElementById('viewer').innerHTML = '<div class="loading">Loading...</div>';
   document.getElementById('buttons').style.display = 'none';
   document.getElementById('codeBox').style.display = 'none';
   document.getElementById('error').style.display = 'none';
@@ -156,7 +236,7 @@ function loadWave(path) {
   // Clear active state
   var files = document.querySelectorAll('.file');
   files.forEach(function(f) { f.classList.remove('active'); });
-  event.target.classList.add('active');
+  if (element) element.classList.add('active');
   
   // Fetch the file
   fetch(path)
@@ -214,6 +294,9 @@ function openEditor() {
     });
   }
 }
+
+// Start when page loads
+window.onload = init;
 
 console.log('Script loaded');
 </script>
