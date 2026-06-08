@@ -74,11 +74,6 @@
     background: #45a049;
   }
   
-  button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-  }
-  
   #codeBox {
     width: 100%;
     height: 400px;
@@ -182,21 +177,21 @@
 
 <div id="sidebar">
   <h2>📚 WaveDrom Library</h2>
-  <div class="loading">Scanning repository...</div>
-  <div class="version">v2.3</div>
+  <div class="loading">Scanning...</div>
+  <div class="version">v3.0</div>
 </div>
 
 <div id="content">
   <div class="header-links">
-    <a href="https://wavedrom.com/" target="_blank">🌐 WaveDrom.com</a>
-    <a href="https://wavedrom.com/editor.html" target="_blank">✏️ Online Editor</a>
-    <a href="https://wavedrom.com/tutorial.html" target="_blank">📖 Tutorial</a>
+    <a href="https://github.com/velikotny-design/wavedrom-library" target="_blank">📂 This Repository</a>
+    <a href="https://wavedrom.com/" target="_blank">🌐 WaveDrom</a>
+    <a href="https://wavedrom.com/editor.html" target="_blank">✏️ Editor</a>
   </div>
   
   <h1 id="title">WaveDrom File Browser</h1>
   
-  <div class="repo-link" id="repoLink" style="display: none;">
-    <a href="#" target="_blank" id="repoUrl">📂 View on GitHub</a>
+  <div class="repo-link">
+    <a href="https://github.com/velikotny-design/wavedrom-library" target="_blank">📂 View Repository on GitHub</a>
   </div>
   
   <div class="buttons" id="buttons" style="display: none;">
@@ -213,11 +208,11 @@
     </div>
     
     <div class="links">
-      <strong>📚 WaveDrom Resources:</strong><br><br>
+      <strong>📚 Quick Links:</strong><br><br>
+      <a href="https://github.com/velikotny-design/wavedrom-library" target="_blank">📂 This Repository</a> - View on GitHub<br>
       <a href="https://wavedrom.com/" target="_blank">🌐 WaveDrom Homepage</a> - Main website<br>
-      <a href="https://wavedrom.com/editor.html" target="_blank">✏️ Online Editor</a> - Edit waveforms online<br>
-      <a href="https://wavedrom.com/tutorial.html" target="_blank">📖 Tutorial</a> - Learn WaveDrom syntax<br>
-      <a href="https://github.com/wavedrom/wavedrom" target="_blank">💻 WaveDrom GitHub</a> - Source code and docs
+      <a href="https://wavedrom.com/editor.html" target="_blank">✏️ Online Editor</a> - Edit waveforms<br>
+      <a href="https://wavedrom.com/tutorial.html" target="_blank">📖 Tutorial</a> - Learn syntax
     </div>
   </div>
   
@@ -227,92 +222,67 @@
 <script>
 var currentCode = null;
 var currentPath = null;
-var repoOwner = '';
-var repoName = '';
-var SCRIPT_VERSION = '2.3';
+var SCRIPT_VERSION = '3.0';
 
 function clearCache() {
   var cachedVersion = localStorage.getItem('wavedrom_lib_version');
-  
   if (cachedVersion !== SCRIPT_VERSION) {
-    console.log('Version changed - clearing cache');
     localStorage.setItem('wavedrom_lib_version', SCRIPT_VERSION);
-    
     if (!sessionStorage.getItem('cache_cleared')) {
       sessionStorage.setItem('cache_cleared', 'true');
       window.location.reload(true);
       return false;
     }
   }
-  
   return true;
 }
 
 function init() {
   if (!clearCache()) return;
   
-  console.log('Initializing file browser...');
-  
   var pathParts = window.location.pathname.split('/').filter(function(p) { 
     return p && p !== 'index.html'; 
   });
-  repoOwner = window.location.hostname.split('.')[0];
-  repoName = pathParts[0];
+  var owner = window.location.hostname.split('.')[0];
+  var repo = pathParts[0];
   
-  console.log('Owner:', repoOwner, 'Repo:', repoName);
-  
-  if (!repoName) {
-    showError('Cannot detect repository name');
+  if (!repo) {
+    showError('Cannot detect repository');
     return;
   }
   
-  document.getElementById('repoLink').style.display = 'block';
-  var link = document.getElementById('repoUrl');
-  link.href = 'https://github.com/' + repoOwner + '/' + repoName;
-  link.textContent = '📂 View on GitHub: ' + repoOwner + '/' + repoName;
-  
-  var apiUrl = 'https://api.github.com/repos/' + repoOwner + '/' + repoName + 
-               '/git/trees/main?recursive=1';
+  var apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/git/trees/main?recursive=1';
   
   fetch(apiUrl)
     .then(function(res) {
-      if (!res.ok) throw new Error('API failed: ' + res.status);
+      if (!res.ok) throw new Error('API failed');
       return res.json();
     })
     .then(function(data) {
       var jsonFiles = data.tree.filter(function(item) {
         return item.type === 'blob' && 
                item.path.endsWith('.json') && 
-               item.path !== 'package.json' &&
-               !item.path.includes('node_modules');
+               item.path !== 'package.json';
       });
-      
-      console.log('Found', jsonFiles.length, 'JSON files');
       
       var tree = {};
       jsonFiles.forEach(function(file) {
         var parts = file.path.split('/');
         var folder = parts.length > 1 ? parts[0] : 'root';
-        
-        if (!tree[folder]) {
-          tree[folder] = [];
-        }
+        if (!tree[folder]) tree[folder] = [];
         tree[folder].push(file.path);
       });
       
       var sidebar = document.getElementById('sidebar');
       sidebar.innerHTML = '<h2>📚 WaveDrom Library</h2>';
       
-      var sidebarRepoLink = document.createElement('div');
-      sidebarRepoLink.className = 'repo-link';
-      sidebarRepoLink.style.marginBottom = '15px';
-      sidebarRepoLink.style.fontSize = '12px';
-      sidebarRepoLink.innerHTML = '<a href="https://github.com/' + repoOwner + '/' + 
-                                   repoName + '" target="_blank">📂 GitHub Repo</a>';
-      sidebar.appendChild(sidebarRepoLink);
+      var sidebarLink = document.createElement('div');
+      sidebarLink.className = 'repo-link';
+      sidebarLink.style.fontSize = '11px';
+      sidebarLink.innerHTML = '<a href="https://github.com/' + owner + '/' + repo + '" target="_blank">📂 GitHub</a>';
+      sidebar.appendChild(sidebarLink);
       
-      var folders = Object.keys(tree).sort();
-      folders.forEach(function(folder) {
+      Object.keys(tree).sort().forEach(function(folder) {
         var folderDiv = document.createElement('div');
         folderDiv.className = 'folder';
         folderDiv.textContent = '📁 ' + folder + '/';
@@ -336,26 +306,23 @@ function init() {
       sidebar.appendChild(versionDiv);
     })
     .catch(function(err) {
-      console.error('Error:', err);
-      showError('Failed to scan repository: ' + err.message);
+      showError('Failed to scan: ' + err.message);
     });
 }
 
 function showError(msg) {
-  var sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = '<h2>📚 WaveDrom Library</h2>' +
-    '<div class="error">' + msg + '</div>' +
-    '<div class="version">v' + SCRIPT_VERSION + '</div>';
+  document.getElementById('sidebar').innerHTML = 
+    '<h2>📚 WaveDrom Library</h2><div class="error">' + msg + '</div>';
 }
+
 function selectFile(path, element) {
-  console.log('Selected:', path);
-  
   currentPath = path;
   
   document.getElementById('title').textContent = path;
   document.getElementById('buttons').style.display = 'block';
   document.getElementById('codeBox').style.display = 'none';
-  document.getElementById('info').innerHTML = '<div class="info">File selected. Choose an action above.</div>';
+  document.getElementById('info').innerHTML = 
+    '<div class="info">File selected: ' + path + '<br>Choose an action above.</div>';
   document.getElementById('error').style.display = 'none';
   
   var files = document.querySelectorAll('.file');
@@ -366,73 +333,60 @@ function selectFile(path, element) {
 }
 
 function loadFileContent(path) {
-  console.log('Loading content for:', path);
-  
-  var cacheBuster = '?t=' + new Date().getTime();
-  fetch(path + cacheBuster)
+  fetch(path + '?t=' + new Date().getTime())
     .then(function(response) {
-      if (!response.ok) throw new Error('File not found');
+      if (!response.ok) throw new Error('Not found');
       return response.text();
     })
     .then(function(text) {
-      console.log('Loaded', text.length, 'bytes');
       currentCode = text;
     })
     .catch(function(error) {
-      console.error('Error loading file:', error);
       document.getElementById('error').style.display = 'block';
-      document.getElementById('error').className = 'error';
-      document.getElementById('error').textContent = 'Error loading file: ' + error.message;
+      document.getElementById('error').textContent = 'Error: ' + error.message;
       currentCode = null;
     });
 }
 
 function showCode() {
   if (!currentCode) {
-    alert('File content not loaded yet. Please wait a moment and try again.');
+    alert('Loading... please wait');
     return;
   }
-  
   var box = document.getElementById('codeBox');
   box.value = currentCode;
   box.style.display = 'block';
-  document.getElementById('info').innerHTML = '<div class="info">Code displayed below. Copy with Cmd+A, Cmd+C</div>';
 }
 
 function openEditor() {
   if (!currentCode) {
-    alert('File content not loaded yet. Please wait a moment and try again.');
+    alert('Loading... please wait');
     return;
   }
-  
   navigator.clipboard.writeText(currentCode).then(function() {
-    alert('Code copied to clipboard! Opening WaveDrom editor...\n\nPaste with Cmd+V');
+    alert('Copied! Paste in editor with Cmd+V');
     window.open('https://wavedrom.com/editor.html', '_blank');
   }).catch(function() {
     showCode();
-    alert('Could not copy automatically. Please copy the code shown below, then click OK to open the editor.');
+    alert('Copy manually and click OK');
     window.open('https://wavedrom.com/editor.html', '_blank');
   });
 }
 
 function downloadFile() {
   if (!currentCode) {
-    alert('File content not loaded yet. Please wait a moment and try again.');
+    alert('Loading... please wait');
     return;
   }
-  
   var blob = new Blob([currentCode], {type: 'application/json'});
   var url = URL.createObjectURL(blob);
   var link = document.createElement('a');
   link.href = url;
   link.download = currentPath.split('/').pop();
   link.click();
-  URL.revokeObjectURL(url);
 }
 
 window.onload = init;
-
-console.log('Script loaded');
 </script>
 
 </body>
