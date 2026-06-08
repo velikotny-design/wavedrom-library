@@ -1,0 +1,25 @@
+{
+  signal: [
+  {},
+  {name: 'BL',  wave: '0.............1.....',   node: '..............k....' },{},
+  {name: 'BLdiff',  wave: '1.............0.....',   node: '..............m....' },{},
+  {name: 'PCH_B', wave: '0...1......0....1...',   node: '....a......h....l.' },{},
+  {name: 'wcs', wave: '0....1....0.........',   node: '.....c....f....' },{}, 
+  {name: 'rcs', wave: '10...............1..',   node: '.p...............n....' },{}, 
+  {name: 'WL',  wave: '10....1....0......1.',   node: '.o....b....g......j..' },{},
+  {name: 'memcell',  wave: '0........1..........',   node: '.........i......' },{},   
+ 
+  {name: 'wrdata',  wave: 'x..3..........x.....', data: 'Data_valid',   node: '...e...........' },{},
+],
+  edge: [
+    'e~c w1+++++++', 'i~g w2', 'i-j w2a','a-~c ..++w4','a~-b ..+++++++++w4a......','f~h','k-~l ++++w8_ps','m~l w8x',
+    'c~b w99','g-n dp2a++.......','f~-j +++dp3a........','f~-n ......dp4a++','o-b +dp1...','o~c dp2','p-b dp3','p~c dp4...'
+  ],
+ head:{
+   text:['tspan', ['tspan', {fill:'blue', 'font-weight':'bold', 'font-size':'20', 'font-style':'normal'}, 'WRITE       ']],   
+ 
+ },
+ foot:{  
+   text:'* notes:',
+ },    
+}
