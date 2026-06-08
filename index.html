@@ -80,11 +80,6 @@
     background: #45a049;
   }
   
-  button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-  }
-  
   #codeBox {
     width: 100%;
     height: 200px;
@@ -129,15 +124,6 @@
   .nested {
     margin-left: 20px;
   }
-  
-  .debug {
-    background: #fff3cd;
-    padding: 10px;
-    margin-top: 10px;
-    font-family: monospace;
-    font-size: 11px;
-    border-radius: 4px;
-  }
 </style>
 </head>
 <body>
@@ -158,10 +144,10 @@
   </div>
   
   <div class="buttons" id="buttons" style="display: none;">
-    <button onclick="showCode()" id="btnShowCode">Show Code</button>
-    <button onclick="openEditor()" id="btnOpenEditor">Open in Editor</button>
-    <button onclick="downloadSVG()" id="btnDownloadSVG">Download SVG</button>
-    <button onclick="window.open(currentFileURL, '_blank')" id="btnViewRaw">View Raw JSON</button>
+    <button onclick="showCode()">Show Code</button>
+    <button onclick="openEditor()">Open in Editor</button>
+    <button onclick="downloadSVG()">Download SVG</button>
+    <button onclick="window.open(currentFileURL, '_blank')">View Raw JSON</button>
   </div>
   
   <textarea id="codeBox"></textarea>
@@ -169,8 +155,6 @@
   <div id="viewer">
     <div class="empty-state">👈 Click a file from the sidebar to view its waveform</div>
   </div>
-  
-  <div id="debug" class="debug" style="display: none;"></div>
 </div>
 
 <script>
@@ -183,58 +167,36 @@ var repoOwner = '';
 var repoName = '';
 var baseURL = '';
 
-function debug(msg) {
-  var debugDiv = document.getElementById('debug');
-  debugDiv.style.display = 'block';
-  debugDiv.innerHTML += msg + '<br>';
-  console.log(msg);
-}
-
-// Initialize: Auto-discover everything
 function initLibrary() {
-  // Detect if we're on GitHub Pages
   var isGitHubPages = window.location.hostname.includes('github.io');
   
   if (isGitHubPages) {
-    // Extract repo info from URL
-    // Format: username.github.io/repo-name/
     var pathParts = window.location.pathname.split('/').filter(function(p) { return p; });
     repoOwner = window.location.hostname.split('.')[0];
     repoName = pathParts[0] || repoOwner;
-    
-    // Base URL for loading files
     baseURL = '/' + repoName + '/';
     
-    debug('GitHub Pages detected');
-    debug('Owner: ' + repoOwner);
-    debug('Repo: ' + repoName);
-    debug('Base URL: ' + baseURL);
+    console.log('Owner: ' + repoOwner + ', Repo: ' + repoName);
     
-    // Scan the repository root
     scanGitHubDirectory('', function(tree) {
       renderTree(tree);
     });
   } else {
-    // Local development mode
     document.getElementById('sidebar').innerHTML = 
       '<h2>📚 WaveDrom Library</h2>' +
       '<div class="error">' +
       '<strong>⚠️ Local Mode</strong><br>' +
-      'Auto-discovery only works on GitHub Pages.<br><br>' +
-      'For local testing, manually add file structure.' +
+      'Auto-discovery only works on GitHub Pages.' +
       '</div>';
   }
 }
 
-// Scan GitHub directory recursively
 function scanGitHubDirectory(path, callback) {
   var apiUrl = 'https://api.github.com/repos/' + repoOwner + '/' + repoName + '/contents/' + path;
   
-  debug('Scanning: ' + apiUrl);
-  
   fetch(apiUrl)
     .then(function(response) {
-      if (!response.ok) throw new Error('Cannot access repo: ' + response.status);
+      if (!response.ok) throw new Error('Cannot access repo');
       return response.json();
     })
     .then(function(items) {
@@ -242,11 +204,7 @@ function scanGitHubDirectory(path, callback) {
       var pending = 0;
       var processed = 0;
       
-      debug('Found ' + items.length + ' items in ' + (path || 'root'));
-      
-      // First pass: identify files and folders
       items.forEach(function(item) {
-        // Skip hidden files, index.html, and viewer.html
         if (item.name.startsWith('.') || item.name === 'index.html' || item.name === 'viewer.html') {
           return;
         }
@@ -257,7 +215,6 @@ function scanGitHubDirectory(path, callback) {
             path: item.path,
             download_url: item.download_url
           });
-          debug('Found JSON file: ' + item.path);
         } else if (item.type === 'dir') {
           pending++;
           scanGitHubDirectory(item.path, function(subTree) {
@@ -270,18 +227,16 @@ function scanGitHubDirectory(path, callback) {
         }
       });
       
-      // If no subdirectories, callback immediately
       if (pending === 0) {
         callback(tree);
       }
     })
     .catch(function(error) {
-      debug('Error scanning ' + path + ': ' + error.message);
+      console.error('Error scanning:', error);
       callback({folders: {}, files: []});
     });
 }
 
-// Render the tree structure in sidebar
 function renderTree(tree, parentElement, basePath) {
   if (!parentElement) {
     parentElement = document.getElementById('sidebar');
@@ -294,7 +249,6 @@ function renderTree(tree, parentElement, basePath) {
   
   var totalFiles = 0;
   
-  // Render folders (sorted alphabetically)
   var folderNames = Object.keys(tree.folders).sort();
   folderNames.forEach(function(folderName) {
     var folderDiv = document.createElement('div');
@@ -311,7 +265,6 @@ function renderTree(tree, parentElement, basePath) {
     totalFiles += count;
   });
   
-  // Render files (sorted alphabetically)
   tree.files.sort(function(a, b) {
     return a.name.localeCompare(b.name);
   });
@@ -320,17 +273,15 @@ function renderTree(tree, parentElement, basePath) {
     var fileDiv = document.createElement('div');
     fileDiv.className = 'file';
     fileDiv.textContent = '📄 ' + file.name;
-    fileDiv.setAttribute('data-path', file.path);
     fileDiv.onclick = function(e) {
-      loadWaveform(file.path, file.download_url, e.currentTarget);
+      loadWaveform(file.path, file.download_url, e.target);
     };
     parentElement.appendChild(fileDiv);
     totalFiles++;
   });
   
-  // Show empty message if no files found
   if (totalFiles === 0 && !basePath) {
-    parentElement.innerHTML += '<div class="empty-state">No .json files found in repository</div>';
+    parentElement.innerHTML += '<div class="empty-state">No .json files found</div>';
   }
   
   return totalFiles;
@@ -339,109 +290,78 @@ function renderTree(tree, parentElement, basePath) {
 function loadWaveform(path, downloadURL, element) {
   currentName = path;
   currentFilePath = path;
-  
-  // Use download_url from GitHub API (raw content URL)
   currentFileURL = downloadURL || (baseURL + path);
   
-  debug('Loading waveform: ' + path);
-  debug('URL: ' + currentFileURL);
-  
-  // Update title
   document.getElementById('title').innerHTML = '<span class="loading">Loading ' + path + '...</span>';
   
-  // Clear viewer
   var viewer = document.getElementById('viewer');
   viewer.innerHTML = '<div class="loading">Loading waveform...</div>';
   
-  // Hide buttons and code
   document.getElementById('buttons').style.display = 'none';
   document.getElementById('codeBox').style.display = 'none';
   
-  // Update active file in sidebar
-  var files = document.querySelectorAll('.file');
-  files.forEach(function(f) { f.classList.remove('active'); });
-  if (element) element.classList.add('active');
+  var fetchURL = downloadURL || (baseURL + path);
+  console.log('Fetching from:', fetchURL);
   
-  // Fetch the JSON file
-  fetch(currentFileURL)
+  fetch(fetchURL)
     .then(function(response) {
-      debug('Fetch response status: ' + response.status);
       if (!response.ok) {
-        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+        throw new Error('File not found: ' + response.status);
       }
       return response.text();
     })
     .then(function(text) {
-      debug('Received ' + text.length + ' bytes');
-      debug('First 100 chars: ' + text.substring(0, 100));
-      
-      // Store raw code
       currentRawCode = text;
+      console.log('Loaded code:', text.substring(0, 100));
       
-      // Parse JSON (try strict first, then relaxed)
       try {
         currentWaveform = JSON.parse(text);
-        debug('Parsed as strict JSON');
       } catch(e) {
-        debug('Strict JSON parse failed: ' + e.message);
-        // Try eval for relaxed WaveDrom syntax
         try {
           currentWaveform = eval('(' + text + ')');
-          debug('Parsed as relaxed JS object');
         } catch(e2) {
-          throw new Error('Invalid JSON format: ' + e2.message);
+          throw new Error('Invalid JSON: ' + e2.message);
         }
       }
       
-      debug('Waveform object: ' + JSON.stringify(currentWaveform).substring(0, 100));
-      
-      // Update title
       document.getElementById('title').textContent = path;
-      
-      // Show buttons
       document.getElementById('buttons').style.display = 'block';
       
-      // Clear and render
       viewer.innerHTML = '<div id="wave"></div>';
+      WaveDrom.RenderWaveForm(0, currentWaveform, "wave");
       
-      try {
-        WaveDrom.RenderWaveForm(0, currentWaveform, "wave");
-        debug('WaveDrom rendered successfully');
-      } catch(e) {
-        throw new Error('WaveDrom render error: ' + e.message);
-      }
+      var files = document.querySelectorAll('.file');
+      files.forEach(function(f) { f.classList.remove('active'); });
+      if (element) element.classList.add('active');
     })
     .catch(function(error) {
-      debug('ERROR: ' + error.message);
-      viewer.innerHTML = '<div class="error">❌ Error loading waveform: ' + error.message + '</div>';
+      console.error('Error:', error);
+      viewer.innerHTML = '<div class="error">❌ Error: ' + error.message + '</div>';
       document.getElementById('title').textContent = 'Error';
     });
 }
 
 function showCode() {
-  if (!currentRawCode) {
-    alert('No code loaded yet');
-    return;
-  }
   var box = document.getElementById('codeBox');
-  box.value = currentRawCode;
+  box.value = currentRawCode || 'No code loaded';
   box.style.display = 'block';
   box.select();
 }
 
 function openEditor() {
   if (!currentRawCode) {
-    alert('No code loaded yet. Click a file first.');
+    alert('No code loaded yet');
     return;
   }
-  window.open('https://wavedrom.com/editor.html', '_blank');
-  // Copy code to clipboard
-  navigator.clipboard.writeText(currentRawCode).then(function() {
-    alert('Code copied to clipboard! Paste it in the editor (Cmd+V)');
+  
+  var cleanCode = currentRawCode.trim();
+  navigator.clipboard.writeText(cleanCode).then(function() {
+    alert('✅ Code copied to clipboard!\n\nNow opening editor - paste with Cmd+V');
+    window.open('https://wavedrom.com/editor.html', '_blank');
   }).catch(function() {
-    // Clipboard failed, show code instead
     showCode();
-    alert('Copy the code above and paste it in the editor');
+    alert('Copy the code manually and then click OK to open the editor');
+    window.open('https://wavedrom.com/editor.html', '_blank');
   });
 }
 
@@ -455,10 +375,11 @@ function downloadSVG() {
     link.href = url;
     link.download = currentName.replace('/', '_').replace('.json', '.svg');
     link.click();
-  } else {
-    alert('No waveform to download');
   }
 }
 
-// Initialize on page load
-window.onload = initLib
+window.onload = initLibrary;
+</script>
+
+</body>
+</html>
