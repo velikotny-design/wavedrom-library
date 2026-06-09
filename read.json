@@ -6,15 +6,19 @@
   {name: 'rcs', wave: '0.1.......0...',   node: '..c.......f....' },{},
   {name: 'WL',  wave: '0..1.....0....',   node: '...b.....g.....' },{},   
   {name: 'colpch_b', wave: '0.1........0..',   node: '..d........e.........' },{}, 
-  {name: 'Saout',  wave: '1.......0.....',   node: '........i............' },{},   
-  {name: 'SDLclk', wave: '0...1......0..',   node: '...........l.......' },{},
-  {name: 'gbl', wave: '1.......0...1.....',   node: '............p....' },{},
-  {name: 'kpr(SDL)out', wave: '0.........1....',   node: '..........n........' },{},
+  {name: 'Saout(d2in)',  wave: '0....1....0...',   node: '.....r....s..........' },{}, 
+  {name: 'glbpch', wave: '0...1......0..',   node: '....u......t......' },{},
+  {name: 'gfb', wave: '0.....1.....0.',   node: '......q..........' },
+  {name: 'gbl', wave: '1.....0.....1.',   node: '............p....' },{},
+  {name: 'SDLclk', wave: '0...1......0..',   node: '...........l.......' },{},  
+  {name: 'zkpr(SDL)out', wave: '0.......1......',   node: '........n........' },{},
 ],
   edge: [
-    'a-~b ..++++++r1 pp','c~b r1a raw unmatched.......','d~b r1b pp (rcs)','e~g r2b‌‌','e~-f ++++r2b_r27y', 'h-~g .++++++r2b. ',
-    'f~-h ..r2c', 'i~-g r4 90% bf wl/rcs/pch+++..', 'j-~a +++r7','k~a r7x','l~p r19',
-  'n~p r27_sn_pu'
+    'a-~b ..++++++r1 pp','c~b r1a raw unmatched.......','d~b r1b pp (rcs)','e~g r2b‌‌','e~-f ++++r2b_r27y..', 'h-~g .++++++r2b. ',
+    'f~-h ..r2c', 'j-~a +++r7','k~a r7x','l~p ..r19',
+  'n~p ...r27_sn_pu++++','q~p r27_gblfb_pu........','r~g r4 (to wl/rcs/pch)+',
+  'n~s r27_sn_pd+++++++.....','q~s r27_gblfb_pd++','n~t .r27x++','t~p +++r19', 'u~r r16_power/perf',
+  's~t r17'
   ],
  head:{
    text:['tspan', ['tspan', {fill:'blue', 'font-weight':'bold', 'font-size':'20', 'font-style':'normal'}, 'READ       ']],     
@@ -24,4 +28,5 @@
  },
 
 }
+
 
