@@ -3,22 +3,21 @@
   {},
   {name: 'BL',  wave: '0...........1....',   node: '............k....' },{},
   {name: 'BLdiff',  wave: '1...........0....',   node: '............m....' },{},
-  {name: 'PCH_B', wave: '0.1......0....1..',   node: '..a......h....l.' },{},
+  {name: 'PCH_B', wave: '0.1.......0....1..',   node: '..a.......h....l.' },{},
   {name: 'wcs', wave: '0..1....0........',   node: '...c....f....' },{}, 
   {name: 'WL',  wave: '0...1....0.....1.',   node: '....b....g.....j..' },{},
-  {name: 'memcell',  wave: '0......1.........',   node: '.......i......' },{},   
- 
-  {name: 'wrdata',  wave: 'x3..........x....', data: 'Data_valid',   node: '.e...........' },{}
+  {name: 'memcell',  wave: '0......1.........',   node: '.......i......' },{},    
+  
 ],
   edge: [
-    'e~c w1+++++++', 'i~g w2', 'i-j w2a *','a-~c ..++w4','a~-b ..++++w4a......','f~h w5','k-~l ++++w8_ps','m~l w8x',
-    'c~b w99'
+    'i~g ++w2 (wl/wcs/blpch).......','a-~c ..++w4','a~-b ..++++w4a......','f~h w5',
+    'k-~l ++++w8_ps','m~l (w8x)', 'c~b w99','g~h ..++w5a' 
   ],
  head:{
    text:['tspan', ['tspan', {fill:'blue', 'font-weight':'bold', 'font-size':'20', 'font-style':'normal'}, 'WRITE       ']],   
  
  },
  foot:{  
-   text:'* memcell @95%',
+   text:'* notes'
  },    
 }
