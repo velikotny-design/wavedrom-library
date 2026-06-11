@@ -1,15 +1,17 @@
 {
   signal: [
   {}, 
-  {name: 'wcs', wave: '0....1....0.........',   node: '.....c....f....' },{}, 
-  {name: 'rcs', wave: '10...............1..',   node: '.p...............n....' },{}, 
-  {name: 'WL',  wave: '10....1....0......1.',   node: '.o....b....g......j..' },{},
+  {name: 'wcs', wave: '0.....1...0........',   node: '......c...f....' },{}, 
+  {name: 'rcs', wave: '1.0............1...',   node: '..p............n....' },{}, 
+  {name: 'WL',  wave: '1.0....1...0....1..',   node: '..o....b...g....j..' },{},
+  {name: 'RdWr', "wave": "7.4...5....4....7..", "data": ["read", "precharge", "write","precharge","read"] },
   
   
 ],
   edge: [
     'e~c w1+++++++','a-~c ..++w4','a~-b ..+++++++++w4a......','f~h','k-~l ++++w8_ps','m~l w8x',
-    'c~b w99','g-n dp2a++.......','f~-j +++dp3a........','f~-n ......dp4a++','o-b +dp1...','o~c dp2','p-b dp3','p~c dp4...'
+    'g-n dp2a+.......','f~-j +++dp3a......','f~-n ......dp4a++','o-b +dp1...',
+    'o~c dp2','p-b .dp3','p~c dp4...','g~j +dp1a..'
   ],
  head:{
    text:['tspan', ['tspan', {fill:'blue', 'font-weight':'bold', 'font-size':'20', 'font-style':'normal'}, 'DP       ']],   
