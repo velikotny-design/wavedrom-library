@@ -319,7 +319,7 @@ function renderFileTree(files) {
   });
   
   var sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = '<h2>📚 WaveDrom Library</h2>';
+  sidebar.innerHTML = '<h2><a href="https://github.com/velikotny-design/wavedrom-library" target="_blank">📚 WaveDrom Library</a></h2>';
   
   Object.keys(tree).sort().forEach(function(folder) {
     var folderDiv = document.createElement('div');
