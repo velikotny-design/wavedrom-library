@@ -8,12 +8,14 @@
 <script src="wavedrom-custom-styling.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     display: flex;
     height: 100vh;
     overflow: hidden;
   }
+  
   #sidebar {
     width: 280px;
     background: #f5f5f5;
@@ -22,11 +24,13 @@
     padding: 15px;
     flex-shrink: 0;
   }
+  
   #sidebar h2 {
     font-size: 18px;
     margin-bottom: 15px;
     color: #333;
   }
+  
   .folder {
     font-weight: bold;
     color: #0366d6;
@@ -34,6 +38,7 @@
     margin-bottom: 5px;
     font-size: 14px;
   }
+  
   .file {
     padding: 6px 10px;
     margin: 2px 0;
@@ -45,26 +50,31 @@
     font-size: 13px;
     transition: all 0.2s;
   }
+  
   .file:hover {
     background: #e3f2fd;
     border-color: #2196F3;
   }
+  
   .file.active {
     background: #2196F3;
     color: white;
     border-color: #2196F3;
   }
+  
   .version {
     font-size: 10px;
     color: #999;
     margin-top: 15px;
     text-align: center;
   }
+  
   .loading {
     color: #2196F3;
     font-style: italic;
     padding: 10px;
   }
+  
   .error {
     color: #f44336;
     padding: 10px;
@@ -73,12 +83,14 @@
     margin: 10px 0;
     font-size: 13px;
   }
+  
   #editor-container {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
+  
   #header {
     background: #2196F3;
     color: white;
@@ -88,14 +100,17 @@
     align-items: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
+  
   #header h1 {
     font-size: 18px;
     font-weight: 500;
   }
+  
   #header .controls {
     display: flex;
     gap: 10px;
   }
+  
   #header button {
     padding: 6px 16px;
     background: white;
@@ -106,46 +121,68 @@
     font-size: 13px;
     font-weight: 500;
   }
+  
   #header button:hover {
     background: #f0f0f0;
   }
+  
   #workspace {
     flex: 1;
     display: flex;
     overflow: hidden;
   }
+  
   #code-editor {
-    width: 50%;
+    width: 40%;
+    min-width: 200px;
     display: flex;
     flex-direction: column;
-    border-right: 2px solid #ddd;
   }
+  
   #code-editor textarea {
     flex: 1;
     padding: 15px;
     font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 13px;
+    font-size: 14px;
     border: none;
     resize: none;
     outline: none;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    background: #282c34;
+    color: #abb2bf;
+    line-height: 1.5;
   }
+  
+  #resize-handle {
+    width: 5px;
+    background: #ddd;
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    user-select: none;
+  }
+  
+  #resize-handle:hover {
+    background: #2196F3;
+  }
+  
   #diagram-viewer {
-    width: 50%;
+    flex: 1;
     overflow: auto;
-    background: white;
+    background: #f8f9fa;
     padding: 20px;
   }
+  
   #diagram-output {
     min-height: 100%;
   }
+  
   .welcome-message {
     text-align: center;
     color: #999;
     padding: 60px 20px;
     font-size: 16px;
   }
+  
   .status {
     padding: 8px 15px;
     background: #fff3cd;
@@ -177,6 +214,8 @@
       <textarea id="code-input" placeholder="Load a file or paste WaveDrom JSON here..."></textarea>
     </div>
     
+    <div id="resize-handle"></div>
+    
     <div id="diagram-viewer">
       <div id="diagram-output">
         <div class="welcome-message">
@@ -195,11 +234,11 @@ var REPO_NAME = 'wavedrom-library';
 var BRANCH = 'main';
 var currentPath = null;
 var autoStyleEnabled = true;
-var isApplying = false;
 
 window.onload = function() {
   loadFileList();
   setupAutoRender();
+  setupResizablePanes();
 };
 
 function loadFileList() {
@@ -342,11 +381,13 @@ function renderDiagram() {
     
     setTimeout(function() {
       console.log('Applying custom styling...');
-      if (autoStyleEnabled) {
-        applyCustomStyling();
-        setupAutoStyling();
+      if (autoStyleEnabled && typeof window.applyCustomStyling === 'function') {
+        window.applyCustomStyling();
+        if (typeof window.setupAutoStyling === 'function') {
+          window.setupAutoStyling();
+        }
       }
-    }, 700);
+    }, 100);
     
     console.log('Diagram rendered');
     
@@ -383,46 +424,42 @@ function downloadSVG() {
   URL.revokeObjectURL(url);
 }
 
-
-
-function reconnectObserver() {
-  var target = document.getElementById('diagram-output');
-  if(target && window._wavedromObserver) {
-    window._wavedromObserver.observe(target, {
-      childList: true,
-      subtree: true
-    });
-  }
-}
-
-function setupAutoStyling() {
-  var target = document.getElementById('diagram-output');
-  if(!target) return;
+function setupResizablePanes() {
+  var handle = document.getElementById('resize-handle');
+  var leftPane = document.getElementById('code-editor');
+  var container = document.getElementById('workspace');
+  var isResizing = false;
   
-  if(window._wavedromObserver) {
-    window._wavedromObserver.disconnect();
-  }
+  if(!handle || !leftPane || !container) return;
   
-  var timeout = null;
-  window._wavedromObserver = new MutationObserver(function(mutations) {
-    var hasRealChanges = mutations.some(function(m) {
-      return Array.from(m.addedNodes).some(function(n) {
-        return n.tagName === 'svg' || n.tagName === 'SCRIPT';
-      });
-    });
+  handle.addEventListener('mousedown', function(e) {
+    isResizing = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
     
-    if(hasRealChanges && !isApplying) {
-      clearTimeout(timeout);
-      timeout = setTimeout(applyCustomStyling, 800);
+    var containerRect = container.getBoundingClientRect();
+    var newWidth = e.clientX - containerRect.left;
+    var percentage = (newWidth / containerRect.width) * 100;
+    
+    if (percentage > 20 && percentage < 80) {
+      leftPane.style.width = percentage + '%';
     }
   });
   
-  reconnectObserver();
-  console.log('✓ Auto-styling monitor active');
+  document.addEventListener('mouseup', function() {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    }
+  });
 }
 
 </script>
 </body>
 </html>
-
-      
