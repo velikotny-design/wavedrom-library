@@ -8,248 +8,150 @@
 <script src="wavedrom-custom-styling.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     display: flex;
     height: 100vh;
     overflow: hidden;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Sidebar appearance
-     ======================================== */
   #sidebar {
     width: 280px;
-    min-width: 150px;
-    background: #f5f5f5;        /* CUSTOMIZE: Sidebar background color */
-    border-right: none;
+    background: #f5f5f5;
+    border-right: 2px solid #ddd;
     overflow-y: auto;
-    padding: 15px;              /* CUSTOMIZE: Sidebar padding */
+    padding: 15px;
     flex-shrink: 0;
   }
-  
   #sidebar h2 {
-    font-size: 18px;            /* CUSTOMIZE: Sidebar title font size */
+    font-size: 18px;
     margin-bottom: 15px;
-    color: #333;                /* CUSTOMIZE: Sidebar title color */
+    color: #333;
   }
-  
   .folder {
     font-weight: bold;
-    color: #0366d6;             /* CUSTOMIZE: Folder name color */
+    color: #0366d6;
     margin-top: 12px;
     margin-bottom: 5px;
-    font-size: 14px;            /* CUSTOMIZE: Folder name font size */
+    font-size: 14px;
   }
-  
   .file {
-    padding: 6px 10px;          /* CUSTOMIZE: File item padding */
+    padding: 6px 10px;
     margin: 2px 0;
     margin-left: 8px;
     cursor: pointer;
     border-radius: 4px;
-    background: white;          /* CUSTOMIZE: File item background */
-    border: 1px solid #ddd;     /* CUSTOMIZE: File item border */
-    font-size: 13px;            /* CUSTOMIZE: File name font size */
+    background: white;
+    border: 1px solid #ddd;
+    font-size: 13px;
     transition: all 0.2s;
   }
-  
   .file:hover {
-    background: #e3f2fd;        /* CUSTOMIZE: File hover background */
-    border-color: #2196F3;      /* CUSTOMIZE: File hover border */
-  }
-  
-  .file.active {
-    background: #2196F3;        /* CUSTOMIZE: Active file background */
-    color: white;               /* CUSTOMIZE: Active file text color */
+    background: #e3f2fd;
     border-color: #2196F3;
   }
-  
+  .file.active {
+    background: #2196F3;
+    color: white;
+    border-color: #2196F3;
+  }
   .version {
-    font-size: 10px;            /* CUSTOMIZE: Version text size */
-    color: #999;                /* CUSTOMIZE: Version text color */
+    font-size: 10px;
+    color: #999;
     margin-top: 15px;
     text-align: center;
   }
-  
   .loading {
-    color: #2196F3;             /* CUSTOMIZE: Loading text color */
+    color: #2196F3;
     font-style: italic;
     padding: 10px;
   }
-  
   .error {
-    color: #f44336;             /* CUSTOMIZE: Error text color */
+    color: #f44336;
     padding: 10px;
-    background: #ffebee;        /* CUSTOMIZE: Error background */
+    background: #ffebee;
     border-radius: 4px;
     margin: 10px 0;
     font-size: 13px;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Main editor container
-     ======================================== */
   #editor-container {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Header bar
-     ======================================== */
   #header {
-    background: #2196F3;        /* CUSTOMIZE: Header background color */
-    color: white;               /* CUSTOMIZE: Header text color */
-    padding: 12px 20px;         /* CUSTOMIZE: Header padding */
+    background: #2196F3;
+    color: white;
+    padding: 12px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
-  
   #header h1 {
-    font-size: 18px;            /* CUSTOMIZE: Header title font size */
+    font-size: 18px;
     font-weight: 500;
   }
-  
   #header .controls {
     display: flex;
     gap: 10px;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Header buttons
-     ======================================== */
   #header button {
-    padding: 6px 16px;          /* CUSTOMIZE: Button padding */
-    background: white;          /* CUSTOMIZE: Button background */
-    color: #2196F3;             /* CUSTOMIZE: Button text color */
+    padding: 6px 16px;
+    background: white;
+    color: #2196F3;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 13px;            /* CUSTOMIZE: Button font size */
+    font-size: 13px;
     font-weight: 500;
   }
-  
   #header button:hover {
-    background: #f0f0f0;        /* CUSTOMIZE: Button hover background */
+    background: #f0f0f0;
   }
-  
   #workspace {
     flex: 1;
     display: flex;
     overflow: hidden;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Code editor pane
-     ======================================== */
   #code-editor {
-    width: 40%;
-    min-width: 200px;
+    width: 50%;
     display: flex;
     flex-direction: column;
+    border-right: 2px solid #ddd;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Code editor textarea (colors, fonts)
-     ======================================== */
   #code-editor textarea {
     flex: 1;
-    padding: 15px;              /* CUSTOMIZE: Code editor padding */
-    font-family: 'Monaco', 'Menlo', 'Courier New', monospace; /* CUSTOMIZE: Code font */
-    font-size: 14px;            /* CUSTOMIZE: Code font size */
+    padding: 15px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 13px;
     border: none;
     resize: none;
     outline: none;
-    background: #282c34;        /* CUSTOMIZE: Code background color (dark theme) */
-    color: #abb2bf;             /* CUSTOMIZE: Code text color */
-    line-height: 1.5;           /* CUSTOMIZE: Code line height */
+    background: #1e1e1e;
+    color: #d4d4d4;
   }
-  
-  /* Try these alternative color schemes:
-     Light theme:
-       background: #ffffff;
-       color: #000000;
-     
-     VSCode Dark:
-       background: #1e1e1e;
-       color: #d4d4d4;
-     
-     Monokai:
-       background: #272822;
-       color: #f8f8f2;
-  */
-  
-  /* ========================================
-     CUSTOMIZE: Left resize handle (sidebar)
-     ======================================== */
-  #resize-handle-left {
-    width: 5px;                 /* CUSTOMIZE: Handle width */
-    background: #ddd;           /* CUSTOMIZE: Handle color */
-    cursor: col-resize;
-    flex-shrink: 0;
-    transition: background 0.2s;
-    user-select: none;
-  }
-  
-  #resize-handle-left:hover {
-    background: #2196F3;        /* CUSTOMIZE: Handle hover color */
-  }
-  
-  /* ========================================
-     CUSTOMIZE: Right resize handle (code/diagram)
-     ======================================== */
-  #resize-handle {
-    width: 5px;                 /* CUSTOMIZE: Handle width */
-    background: #ddd;           /* CUSTOMIZE: Handle color */
-    cursor: col-resize;
-    flex-shrink: 0;
-    transition: background 0.2s;
-    user-select: none;
-  }
-  
-  #resize-handle:hover {
-    background: #2196F3;        /* CUSTOMIZE: Handle hover color */
-  }
-  
-  /* ========================================
-     CUSTOMIZE: Diagram viewer pane
-     ======================================== */
   #diagram-viewer {
-    flex: 1;
+    width: 50%;
     overflow: auto;
-    background: #f8f9fa;        /* CUSTOMIZE: Diagram background color */
-    padding: 20px;              /* CUSTOMIZE: Diagram area padding */
+    background: white;
+    padding: 20px;
   }
-  
   #diagram-output {
     min-height: 100%;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Welcome message
-     ======================================== */
   .welcome-message {
     text-align: center;
-    color: #999;                /* CUSTOMIZE: Welcome text color */
+    color: #999;
     padding: 60px 20px;
-    font-size: 16px;            /* CUSTOMIZE: Welcome text size */
+    font-size: 16px;
   }
-  
-  /* ========================================
-     CUSTOMIZE: Status bar
-     ======================================== */
   .status {
-    padding: 8px 15px;          /* CUSTOMIZE: Status bar padding */
-    background: #fff3cd;        /* CUSTOMIZE: Status background */
+    padding: 8px 15px;
+    background: #fff3cd;
     border-top: 1px solid #ffc107;
-    font-size: 12px;            /* CUSTOMIZE: Status text size */
-    color: #856404;             /* CUSTOMIZE: Status text color */
+    font-size: 12px;
+    color: #856404;
   }
 </style>
 </head>
@@ -260,17 +162,8 @@
   <div class="loading">Loading files...</div>
 </div>
 
-<div id="resize-handle-left"></div>
-
 <div id="editor-container">
   <div id="header">
-    <h1 id="current-file">Select a file to start</h1>
-    <div class="controls">
-      <button onclick="renderDiagram()">🔄 Render</button>
-      <button onclick="downloadSVG()">💾 Save SVG</button>
-      <button onclick="clearEditor()">🗑️ Clear</button>
-    </div>
-  </div>
     <h1 id="current-file">Select a file to start</h1>
     <div class="controls">
       <button onclick="renderDiagram()">🔄 Render</button>
@@ -283,8 +176,6 @@
     <div id="code-editor">
       <textarea id="code-input" placeholder="Load a file or paste WaveDrom JSON here..."></textarea>
     </div>
-    
-    <div id="resize-handle"></div>
     
     <div id="diagram-viewer">
       <div id="diagram-output">
@@ -304,11 +195,11 @@ var REPO_NAME = 'wavedrom-library';
 var BRANCH = 'main';
 var currentPath = null;
 var autoStyleEnabled = true;
+var isApplying = false;
 
 window.onload = function() {
   loadFileList();
   setupAutoRender();
-  setupResizablePanes();
 };
 
 function loadFileList() {
@@ -451,11 +342,9 @@ function renderDiagram() {
     
     setTimeout(function() {
       console.log('Applying custom styling...');
-      if (autoStyleEnabled && typeof applyCustomStyling === 'function') {
+      if (autoStyleEnabled) {
         applyCustomStyling();
-        if (typeof setupAutoStyling === 'function') {
-          setupAutoStyling();
-        }
+        setupAutoStyling();
       }
     }, 700);
     
@@ -494,74 +383,46 @@ function downloadSVG() {
   URL.revokeObjectURL(url);
 }
 
-// ========================================
-// CUSTOMIZE: Resize handle limits
-// ========================================
-function setupResizablePanes() {
-  // Right handle (between code and diagram)
-  var handleRight = document.getElementById('resize-handle');
-  var leftPane = document.getElementById('code-editor');
-  var container = document.getElementById('workspace');
-  var isResizingRight = false;
-  
-  if(handleRight && leftPane && container) {
-    handleRight.addEventListener('mousedown', function(e) {
-      isResizingRight = true;
-      document.body.style.cursor = 'col-resize';
-      e.preventDefault();
+
+
+function reconnectObserver() {
+  var target = document.getElementById('diagram-output');
+  if(target && window._wavedromObserver) {
+    window._wavedromObserver.observe(target, {
+      childList: true,
+      subtree: true
     });
   }
+}
+
+function setupAutoStyling() {
+  var target = document.getElementById('diagram-output');
+  if(!target) return;
   
-  // Left handle (between sidebar and editor)
-  var handleLeft = document.getElementById('resize-handle-left');
-  var sidebar = document.getElementById('sidebar');
-  var isResizingLeft = false;
-  
-  if(handleLeft && sidebar) {
-    handleLeft.addEventListener('mousedown', function(e) {
-      isResizingLeft = true;
-      document.body.style.cursor = 'col-resize';
-      e.preventDefault();
-    });
+  if(window._wavedromObserver) {
+    window._wavedromObserver.disconnect();
   }
   
-  // Mouse move handler for both
-  document.addEventListener('mousemove', function(e) {
-    // Right handle
-    if (isResizingRight && container) {
-      var containerRect = container.getBoundingClientRect();
-      var newWidth = e.clientX - containerRect.left;
-      var percentage = (newWidth / containerRect.width) * 100;
-      
-      // CUSTOMIZE: Code/Diagram split limits (20% to 80%)
-      if (percentage > 20 && percentage < 80) {
-        leftPane.style.width = percentage + '%';
-      }
-    }
+  var timeout = null;
+  window._wavedromObserver = new MutationObserver(function(mutations) {
+    var hasRealChanges = mutations.some(function(m) {
+      return Array.from(m.addedNodes).some(function(n) {
+        return n.tagName === 'svg' || n.tagName === 'SCRIPT';
+      });
+    });
     
-    // Left handle
-    if (isResizingLeft && sidebar) {
-      var newWidth = e.clientX;
-      
-      // CUSTOMIZE: Sidebar width limits (150px to 500px)
-      if (newWidth > 150 && newWidth < 500) {
-        sidebar.style.width = newWidth + 'px';
-      }
+    if(hasRealChanges && !isApplying) {
+      clearTimeout(timeout);
+      timeout = setTimeout(applyCustomStyling, 800);
     }
   });
   
-  // Mouse up handler
-  document.addEventListener('mouseup', function() {
-    if (isResizingRight || isResizingLeft) {
-      isResizingRight = false;
-      isResizingLeft = false;
-      document.body.style.cursor = 'default';
-    }
-  });
+  reconnectObserver();
+  console.log('✓ Auto-styling monitor active');
 }
 
 </script>
 </body>
 </html>
 
- 
+      
