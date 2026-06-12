@@ -229,6 +229,7 @@ var REPO_NAME = 'wavedrom-library';
 var BRANCH = 'main';
 var currentPath = null;
 var autoStyleEnabled = true;
+var isApplying = false;
 
 // Initialize
 window.onload = function() {
@@ -303,10 +304,11 @@ function renderFileTree(files) {
   versionDiv.textContent = files.length + ' files loaded';
   sidebar.appendChild(versionDiv);
 }
+
 // Show status message
 function showStatus(message, isError) {
   var statusDiv = document.getElementById('status');
-  if (!statusDiv) return; // Safety check
+  if (!statusDiv) return;
   
   statusDiv.textContent = message;
   statusDiv.style.display = 'block';
@@ -318,6 +320,7 @@ function showStatus(message, isError) {
     statusDiv.style.display = 'none';
   }, 3000);
 }
+
 // Load file content
 function loadFile(path) {
   currentPath = path;
@@ -348,11 +351,12 @@ function setupAutoRender() {
   
   textarea.addEventListener('input', function() {
     clearTimeout(timeout);
-    timeout = setTimeout(renderDiagram, 500);
+    timeout = setTimeout(renderDiagram, 1000);
   });
 }
 
-// Render diagram from code
+
+ // Render diagram from code
 function renderDiagram() {
   var code = document.getElementById('code-input').value.trim();
   var output = document.getElementById('diagram-output');
@@ -368,14 +372,13 @@ function renderDiagram() {
     try {
       wavedata = JSON.parse(code);
     } catch(e) {
-      // Try eval as fallback (for non-strict JSON)
       wavedata = eval('(' + code + ')');
     }
     
     // Clear and prepare output
     output.innerHTML = '';
     
-    // Create script element for WaveDrom (the way WaveDrom expects)
+    // Create script element for WaveDrom
     var script = document.createElement('script');
     script.type = 'WaveDrom';
     script.textContent = JSON.stringify(wavedata);
@@ -385,11 +388,12 @@ function renderDiagram() {
     console.log('Processing WaveDrom...');
     WaveDrom.ProcessAll();
     
-    // Apply custom styling after a delay
+    // Apply custom styling and setup monitoring
     setTimeout(function() {
       console.log('Applying custom styling...');
       if (autoStyleEnabled) {
         applyCustomStyling();
+        setupAutoStyling();
       }
     }, 700);
     
@@ -401,52 +405,78 @@ function renderDiagram() {
   }
 }
 
-// YOUR CUSTOM STYLING CODE
-<script>
-// Configuration
-var REPO_OWNER = 'velikotny-design';
-var REPO_NAME = 'wavedrom-library';
-var BRANCH = 'main';
-var currentPath = null;
-var autoStyleEnabled = true;
-
-// Load the fix code from your repository
-var WAVEDROM_FIX_LOADED = false;
-fetch('https://raw.githubusercontent.com/velikotny-design/wavedrom-library/main/wavedrom-fix.js?nocache=' + Date.now())
-  .then(function(res) {
-    if (!res.ok) throw new Error('Fix not loaded');
-    return res.text();
-  })
-  .then(function(fixCode) {
-    console.log('✓ Fix code loaded from repository');
-    // Execute the fix code to define the function
-    eval(fixCode);
-    WAVEDROM_FIX_LOADED = true;
-  })
-  .catch(function(err) {
-    console.error('⚠️ Failed to load fix:', err);
-  });
-
-// Initialize
-window.onload = function() {
-  loadFileList();
-  setupAutoRender();
-};
-
-
-function reconnectObserver() {
-  var target = document.getElementById('diagram-output');
-  if(target && window._wavedromObserver) {
-    window._wavedromObserver.observe(target, {
-      childList: true,
-      subtree: true
-    });
-  }
+// Clear editor
+function clearEditor() {
+  document.getElementById('code-input').value = '';
+  document.getElementById('diagram-output').innerHTML = '<div class="welcome-message">Editor cleared</div>';
+  document.getElementById('current-file').textContent = 'No file loaded';
+  currentPath = null;
 }
 
-</script>
-</body>
-</html>
+// Download SVG
+function downloadSVG() {
+  var svg = document.querySelector('#diagram-output svg');
+  if (!svg) {
+    alert('No diagram to download. Render a diagram first.');
+    return;
+  }
+  
+  var svgData = new XMLSerializer().serializeToString(svg);
+  var blob = new Blob([svgData], {type: 'image/svg+xml'});
+  var url = URL.createObjectURL(blob);
+  
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = (currentPath ? currentPath.replace('.json', '') : 'diagram') + '.svg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// WAVEDROM CUSTOM STYLING WITH AUTO-REFRESH
+// ============================================
+
+// Main styling function
+function applyCustomStyling() {
+  if(isApplying) return;
+  isApplying = true;
+  
+  if(window._wavedromObserver) {
+    window._wavedromObserver.disconnect();
+  }
+  
+  document.querySelectorAll('svg text.info').forEach(function(el){el.style.fontSize='16px'});
+  document.querySelectorAll('svg text.info').forEach(function(el){el.style.fontWeight='normal'});
+  document.querySelectorAll('svg text[y="15"][text-anchor="middle"]').forEach(function(el){
+    el.style.fontSize='14px';
+    el.style.fontWeight='normal';
+  });
+  document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
+    if(el.textContent.length>1) el.style.fontSize='15px';
+  });
+  document.querySelectorAll('g[id^="wavelane_"] text[text-anchor="middle"]').forEach(function(el){
+    if(el.textContent.trim().length===1) el.style.fontSize='6px';
+  });
+  
+  setTimeout(function(){
+    var wavearcs = document.getElementById('wavearcs_0');
+    if(!wavearcs) {
+      isApplying = false;
+      reconnectObserver();
+      return;
+    }
+    
+    var groups = Array.from(wavearcs.children);
+    var lineGroups = [];
+    var textGroups = [];
+    
 
 
-      
+
+
+
+
+
+ 
