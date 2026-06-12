@@ -402,135 +402,37 @@ function renderDiagram() {
 }
 
 // YOUR CUSTOM STYLING CODE
-function applyCustomStyling() {
-  // Prevent recursive application
-  if (window._stylingInProgress) return;
-  window._stylingInProgress = true;
-  
-  // Font styling
-  document.querySelectorAll('svg text.info').forEach(function(el) {
-    el.style.fontSize='16px';
-    el.style.fontWeight='normal';
+<script>
+// Configuration
+var REPO_OWNER = 'velikotny-design';
+var REPO_NAME = 'wavedrom-library';
+var BRANCH = 'main';
+var currentPath = null;
+var autoStyleEnabled = true;
+
+// Load the fix code from your repository
+var WAVEDROM_FIX_LOADED = false;
+fetch('https://raw.githubusercontent.com/velikotny-design/wavedrom-library/main/wavedrom-fix.js?nocache=' + Date.now())
+  .then(function(res) {
+    if (!res.ok) throw new Error('Fix not loaded');
+    return res.text();
+  })
+  .then(function(fixCode) {
+    console.log('✓ Fix code loaded from repository');
+    // Execute the fix code to define the function
+    eval(fixCode);
+    WAVEDROM_FIX_LOADED = true;
+  })
+  .catch(function(err) {
+    console.error('⚠️ Failed to load fix:', err);
   });
-  document.querySelectorAll('svg text[y="15"][text-anchor="middle"]').forEach(function(el) {
-    el.style.fontSize='14px';
-    el.style.fontWeight='normal';
-  });
-  document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el) {
-    if(el.textContent.length>1) el.style.fontSize='15px';
-  });
-  document.querySelectorAll('g[id^="wavelane_"] text[text-anchor="middle"]').forEach(function(el) {
-    if(el.textContent.trim().length===1) el.style.fontSize='6px';
-  });
-  
-  setTimeout(function() {
-    var wavearcs = document.getElementById('wavearcs_0');
-    if(!wavearcs) {
-      window._stylingInProgress = false;
-      return;
-    }
-    
-    // Reorder groups: lines first, then text
-    var groups = Array.from(wavearcs.children);
-    var lineGroups = [];
-    var textGroups = [];
-    
-    groups.forEach(function(group) {
-      if(group.querySelector('text')) {
-        textGroups.push(group);
-      } else {
-        lineGroups.push(group);
-      }
-    });
-    
-    lineGroups.forEach(function(g) { wavearcs.appendChild(g); });
-    textGroups.forEach(function(g) { wavearcs.appendChild(g); });
-    
-    // Add boxes and process positioning
-    document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el) {
-      var originalText = el.textContent;
-      var leadingWhitespace = (originalText.match(/^\s+/) || [''])[0];
-      var trailingWhitespace = (originalText.match(/\s+$/) || [''])[0];
-      var trimmedText = originalText.trim();
-      
-      if(trimmedText.length > 1){
-        var parent = el.parentNode;
-        
-        // Remove existing rectangles
-        parent.querySelectorAll('rect').forEach(function(r) { r.remove(); });
-        
-        // Count control chars
-        var leadingChars = (trimmedText.match(/^[\.\+]+/) || [''])[0];
-        var leadingDots = (leadingChars.match(/\./g) || []).length;
-        var leadingPlus = (leadingChars.match(/\+/g) || []).length;
-        
-        var trailingChars = (trimmedText.match(/[\.\+]+$/) || [''])[0];
-        var trailingDots = (trailingChars.match(/\./g) || []).length;
-        var trailingPlus = (trailingChars.match(/\+/g) || []).length;
-        
-        // Calculate shifts
-        var pixelsPerDot = 3;
-        var pixelsPerPlus = 3;
-        var xShift = (leadingDots - trailingDots) * pixelsPerDot;
-        var yShift = (leadingPlus - trailingPlus) * pixelsPerPlus;
-        
-        // Remove control characters
-        var cleanText = trimmedText;
-        cleanText = cleanText.replace(/^[\.\+]+/, '');
-        cleanText = cleanText.replace(/[\.\+]+$/, '');
-        
-        el.textContent
-        el.textContent = leadingWhitespace + cleanText + trailingWhitespace;
-        el.style.fill = 'black';
-        
-        var bbox = el.getBBox();
-        
-        var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-        rect.setAttribute('class', 'label-box');
-        var paddingX = 4;
-        var paddingY = -2;
-        var baseYOffset = 3;
-        
-        rect.setAttribute('x', bbox.x + xShift - paddingX);
-        rect.setAttribute('y', bbox.y - paddingY + baseYOffset - yShift);
-        rect.setAttribute('width', bbox.width + paddingX*2);
-        rect.setAttribute('height', bbox.height + paddingY*2);
-        rect.setAttribute('fill','grey');
-        rect.setAttribute('fill-opacity','0.9');
-        rect.setAttribute('rx','1');
-        rect.setAttribute('ry','1');
-        
-        parent.insertBefore(rect,el);
-        
-        if(!el.hasAttribute('data-custom-styled')) {
-          var currentX = parseFloat(el.getAttribute('x')) || 0;
-          el.setAttribute('x', currentX + xShift);
-          
-          var currentY = parseFloat(el.getAttribute('y')) || 0;
-          el.setAttribute('y', currentY + baseYOffset - yShift);
-          
-          el.setAttribute('data-custom-styled', 'true');
-        }
-      }
-    });
-    
-    setTimeout(function() {
-      document.querySelectorAll('#wavearcs_0 > g').forEach(function(group) {
-        var rects = group.querySelectorAll('rect');
-        if(rects.length > 1) {
-          rects.forEach(function(rect) {
-            if(!rect.classList.contains('label-box')) {
-              rect.remove();
-            }
-          });
-        }
-      });
-      
-      isApplying = false;
-      reconnectObserver();
-    }, 100);
-  }, 600);
-}
+
+// Initialize
+window.onload = function() {
+  loadFileList();
+  setupAutoRender();
+};
+
 
 function reconnectObserver() {
   var target = document.getElementById('diagram-output');
