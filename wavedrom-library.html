@@ -30,6 +30,7 @@
     overflow-y: auto;
     padding: 15px;             /* CUSTOMIZE: Sidebar padding */
     flex-shrink: 0;
+    position: relative;    /* ADD THIS LINE */
   }
   #sidebar h2 {
     font-size: 18px;           /* CUSTOMIZE: Sidebar title font size */
@@ -316,6 +317,7 @@ var editor;
 window.onload = function() {
   loadFileList();
   setupAutoRender();
+  setupCodeMirror();      // ADD THIS LINE!
   setupResizablePanes();
 };
 
@@ -397,6 +399,11 @@ function renderFileTree(files) {
   versionDiv.className = 'version';
   versionDiv.textContent = files.length + ' files loaded';
   sidebar.appendChild(versionDiv);
+ // ADD THIS:
+var editorLink = document.createElement('div');
+editorLink.className = 'editor-link';
+editorLink.innerHTML = '<a href="https://wavedrom.com/editor.html" target="_blank">✏️ WaveDrom Editor</a>';
+sidebar.appendChild(editorLink);
 }
 
 function showStatus(message, isError) {
