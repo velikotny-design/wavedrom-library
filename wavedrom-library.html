@@ -303,7 +303,21 @@ function renderFileTree(files) {
   versionDiv.textContent = files.length + ' files loaded';
   sidebar.appendChild(versionDiv);
 }
-
+// Show status message
+function showStatus(message, isError) {
+  var statusDiv = document.getElementById('status');
+  if (!statusDiv) return; // Safety check
+  
+  statusDiv.textContent = message;
+  statusDiv.style.display = 'block';
+  statusDiv.style.background = isError ? '#ffebee' : '#fff3cd';
+  statusDiv.style.color = isError ? '#c62828' : '#856404';
+  statusDiv.style.borderTop = '1px solid ' + (isError ? '#ef5350' : '#ffc107');
+  
+  setTimeout(function() {
+    statusDiv.style.display = 'none';
+  }, 3000);
+}
 // Load file content
 function loadFile(path) {
   currentPath = path;
