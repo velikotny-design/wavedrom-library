@@ -397,10 +397,10 @@ function applyCustomStyling() {
     el.style.fontWeight='normal';
   });
   document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
-    if(el.textContent.length>1) el.style.fontSize='15px';
+    if(el.textContent.length>1) el.style.fontSize='14px';
   });
   document.querySelectorAll('g[id^="wavelane_"] text[text-anchor="middle"]').forEach(function(el){
-    if(el.textContent.trim().length===1) el.style.fontSize='6px';
+    if(el.textContent.trim().length===1) el.style.fontSize='4px';
   });
   
   setTimeout(function(){
@@ -427,7 +427,7 @@ function applyCustomStyling() {
     textGroups.forEach(function(g){ wavearcs.appendChild(g); });
     
     document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
-           var originalText = el.textContent;
+      var originalText = el.textContent;
       
       var leadingWhitespace = (originalText.match(/^\s+/) || [''])[0];
       var trailingWhitespace = (originalText.match(/\s+$/) || [''])[0];
@@ -435,7 +435,6 @@ function applyCustomStyling() {
       
       if(trimmedText.length > 1){
         var parent = el.parentNode;
-        
         parent.querySelectorAll('rect').forEach(function(r){ r.remove(); });
         
         var leadingChars = (trimmedText.match(/^[\.\+]+/) || [''])[0];
@@ -446,8 +445,8 @@ function applyCustomStyling() {
         var trailingDots = (trailingChars.match(/\./g) || []).length;
         var trailingPlus = (trailingChars.match(/\+/g) || []).length;
         
-        var pixelsPerDot = 3;
-        var pixelsPerPlus = 3;
+        var pixelsPerDot = 8;
+        var pixelsPerPlus = 6;
         var xShift = (leadingDots - trailingDots) * pixelsPerDot;
         var yShift = (leadingPlus - trailingPlus) * pixelsPerPlus;
         
@@ -456,22 +455,22 @@ function applyCustomStyling() {
         cleanText = cleanText.replace(/[\.\+]+$/, '');
         
         el.textContent = leadingWhitespace + cleanText + trailingWhitespace;
-        el.style.fill = 'black';
+        el.style.fill = 'green';
         
         var bbox = el.getBBox();
         
         var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
         rect.setAttribute('class', 'label-box');
         var paddingX = 4;
-        var paddingY = -2;
+        var paddingY = 2;
         var baseYOffset = 3;
         
         rect.setAttribute('x', bbox.x + xShift - paddingX);
         rect.setAttribute('y', bbox.y - paddingY + baseYOffset - yShift);
         rect.setAttribute('width', bbox.width + paddingX*2);
         rect.setAttribute('height', bbox.height + paddingY*2);
-        rect.setAttribute('fill','grey');
-        rect.setAttribute('fill-opacity','0.9');
+        rect.setAttribute('fill','white');
+        rect.setAttribute('fill-opacity','1.0');
         rect.setAttribute('rx','1');
         rect.setAttribute('ry','1');
         
