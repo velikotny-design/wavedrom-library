@@ -6,6 +6,11 @@
 <script src="https://wavedrom.com/skins/default.js" type="text/javascript"></script>
 <script src="https://wavedrom.com/wavedrom.min.js" type="text/javascript"></script>
 <script src="wavedrom-custom-styling.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -306,12 +311,28 @@ var REPO_NAME = 'wavedrom-library';
 var BRANCH = 'main';
 var currentPath = null;
 var autoStyleEnabled = true;
-
+var editor;
+ 
 window.onload = function() {
   loadFileList();
   setupAutoRender();
   setupResizablePanes();
 };
+
+ function setupCodeMirror() {
+  var textarea = document.getElementById('code-input');
+  editor = CodeMirror.fromTextArea(textarea, {
+    mode: 'javascript',
+    theme: 'monokai',
+    lineNumbers: true,
+    lineWrapping: true
+  });
+  
+  editor.on('change', function() {
+    clearTimeout(window.renderTimeout);
+    window.renderTimeout = setTimeout(renderDiagram, 1000);
+  });
+}
 
 function loadFileList() {
   var apiUrl = 'https://api.github.com/repos/' + REPO_OWNER + '/' + REPO_NAME + '/git/trees/' + BRANCH + '?recursive=1';
@@ -399,7 +420,7 @@ function showStatus(message, isError) {
 
 function loadFile(path) {
   currentPath = path;
-  document.getElementById('current-file').textContent = path;
+  document.getElementById('current-file').textContent = path; 
   showStatus('Loading ' + path + '...');
   
   var rawUrl = 'https://raw.githubusercontent.com/' + REPO_OWNER + '/' + REPO_NAME + '/' + BRANCH + '/' + path;
@@ -409,8 +430,12 @@ function loadFile(path) {
       if (!res.ok) throw new Error('Failed to load file');
       return res.text();
     })
-    .then(function(content) {
-      document.getElementById('code-input').value = content;
+    .then(function(content) {  
+      if (editor) {
+        editor.setValue(content);
+      } else {
+        document.getElementById('code-input').value = content;
+      }
       showStatus('Loaded ' + path);
       renderDiagram();
     })
@@ -429,8 +454,8 @@ function setupAutoRender() {
   });
 }
 
-function renderDiagram() {
-  var code = document.getElementById('code-input').value.trim();
+function renderDiagram() {  
+  var code = editor ? editor.getValue().trim() : document.getElementById('code-input').value.trim();
   var output = document.getElementById('diagram-output');
   
   if (!code) {
