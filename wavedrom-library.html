@@ -40,7 +40,7 @@
      opacity: 0.7;
      text-decoration: underline;
    }
-  .folder {
+   .folder {
     font-weight: bold;
     color: #0366d6;            /* CUSTOMIZE: Folder name color */
     margin-top: 12px;
@@ -92,12 +92,11 @@
      ======================================== */
   .resize-handle {
     width: 10px;                /* CUSTOMIZE: Handle width */
-    background: transparent;   /* CUSTOMIZE: Handle color (transparent = invisible until hover) */
+    background: #ddd;   /* CUSTOMIZE: Handle color (transparent = invisible until hover) */
     cursor: col-resize;
     flex-shrink: 0;
     transition: background 0.2s;
-    user-select: none;
-    color: grey;
+    user-select: none;    
   }
   .resize-handle:hover {
     background: #2196F3;       /* CUSTOMIZE: Handle color on hover */
@@ -232,6 +231,31 @@
     font-size: 12px;           /* CUSTOMIZE: Status text size */
     color: #856404;            /* CUSTOMIZE: Status text color */
   }
+ /* ========================================
+   CUSTOMIZE: Editor link at bottom
+   ======================================== */
+.editor-link {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 11px;
+  padding: 5px 10px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.editor-link a {
+  color: #0366d6;
+  text-decoration: none;
+}
+
+.editor-link:hover {
+  background: #e3f2fd;
+  border-color: #2196F3;
+}
+
 </style>
 </head>
 <body>
@@ -239,8 +263,11 @@
 <div id="sidebar">
   <h2><a href="https://github.com/velikotny-design/wavedrom-library" target="_blank">📚 WaveDrom Library</a></h2>
   <div class="loading">Loading files...</div>
+  <!-- ADD THIS AT THE END, before closing </div>: -->
+  <div class="editor-link">
+    <a href="https://wavedrom.com/editor.html" target="_blank">✏️ WaveDrom Editor</a>
+  </div>
 </div>
-
 
 <div class="resize-handle" id="resize-handle-left"></div>
 
