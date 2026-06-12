@@ -55,7 +55,7 @@
     border-radius: 4px;
     background: white;         /* CUSTOMIZE: File item background */
     border: 1px solid #ddd;    /* CUSTOMIZE: File item border */
-    font-size: 13px;           /* CUSTOMIZE: File name font size */
+    font-size: 15px;           /* CUSTOMIZE: File name font size */
     transition: all 0.2s;
   }
   .file:hover {
@@ -91,7 +91,7 @@
      CUSTOMIZE: Resize handles
      ======================================== */
   .resize-handle {
-    width: 5px;                /* CUSTOMIZE: Handle width */
+    width: 10px;                /* CUSTOMIZE: Handle width */
     background: transparent;   /* CUSTOMIZE: Handle color (transparent = invisible until hover) */
     cursor: col-resize;
     flex-shrink: 0;
@@ -329,9 +329,10 @@ function renderFileTree(files) {
     
     tree[folder].sort().forEach(function(path) {
       var filename = path.split('/').pop();
+      var displayName = filename.replace(/\.json$/, '');  // Strip .json extension
       var fileDiv = document.createElement('div');
       fileDiv.className = 'file';
-      fileDiv.textContent = '📄 ' + filename;
+      fileDiv.textContent = '📄 ' + displayName;  // Show without .json
       fileDiv.onclick = function() {
         loadFile(path);
         document.querySelectorAll('.file').forEach(function(f) {
