@@ -352,33 +352,52 @@ function setupAutoRender() {
   });
 }
 
-// Render WaveDrom diagram
+// Render diagram from code
 function renderDiagram() {
   var code = document.getElementById('code-input').value.trim();
+  var output = document.getElementById('diagram-output');
+  
   if (!code) {
-    document.getElementById('diagram-output').innerHTML = 
-      '<div class="welcome-message">Enter WaveDrom JSON to render</div>';
+    output.innerHTML = '<div class="welcome-message">Enter WaveDrom JSON to render</div>';
     return;
   }
   
   try {
-    var data = eval('(' + code + ')');
-    
-    var output = document.getElementById('diagram-output');
-    output.innerHTML = '<div id="wave"></div>';
-    
-    WaveDrom.RenderWaveForm(0, data, 'wave');
-    
-    // Apply custom styling after render
-    if (autoStyleEnabled) {
-      setTimeout(applyCustomStyling, 700);
+    // Parse JSON
+    var wavedata;
+    try {
+      wavedata = JSON.parse(code);
+    } catch(e) {
+      // Try eval as fallback (for non-strict JSON)
+      wavedata = eval('(' + code + ')');
     }
     
-    showStatus('Diagram rendered ✓');
-  } catch (e) {
-    document.getElementById('diagram-output').innerHTML = 
-      '<div class="error">Parse error: ' + e.message + '</div>';
-    showStatus('Error: ' + e.message, true);
+    // Clear and prepare output
+    output.innerHTML = '';
+    
+    // Create script element for WaveDrom (the way WaveDrom expects)
+    var script = document.createElement('script');
+    script.type = 'WaveDrom';
+    script.textContent = JSON.stringify(wavedata);
+    output.appendChild(script);
+    
+    // Process all WaveDrom scripts
+    console.log('Processing WaveDrom...');
+    WaveDrom.ProcessAll();
+    
+    // Apply custom styling after a delay
+    setTimeout(function() {
+      console.log('Applying custom styling...');
+      if (autoStyleEnabled) {
+        applyCustomStyling();
+      }
+    }, 700);
+    
+    console.log('Diagram rendered');
+    
+  } catch(e) {
+    console.error('Render error:', e);
+    output.innerHTML = '<div class="error">Error rendering diagram:<br><br>' + e.message + '</div>';
   }
 }
 
