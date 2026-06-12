@@ -347,25 +347,18 @@ function showStatus(message, isError) {
   statusDiv.style.display = 'block';
   statusDiv.style.background = isError ? '#ffebee' : '#fff3cd';
   statusDiv.style.color = isError ? '#c62828' : '#856404';
-
-       <textarea id="code-input" placeholder="Load a file or paste WaveDrom JSON here..."></textarea>
-    </div>
-    
-    <div class="resize-handle" id="resize-handle-right"></div>
-    
-    <div id="diagram-viewer">
-      <div id="diagram-output">
-        <div class="welcome-message">
-          👈 Select a file from the sidebar to view and edit
-        </div>
-      </div>
-    </div>
-  </div>
+  statusDiv.style.borderTop = '1px solid ' + (isError ? '#ef5350' : '#ffc107');
   
-  <div id="status" class="status" style="display: none;"></div>
-</div>
+  setTimeout(function() {
+    statusDiv.style.display = 'none';
+  }, 3000);
+}
 
-<script>
+// ============================================
+// PART 1 ENDS HERE - Continue with Part 2
+// ============================================
+
+ <script>
 var REPO_OWNER = 'velikotny-design';
 var REPO_NAME = 'wavedrom-library';
 var BRANCH = 'main';
@@ -561,10 +554,7 @@ function downloadSVG() {
   URL.revokeObjectURL(url);
 }
 
-// ========================================
-// CUSTOMIZE: Resize limits
-// ========================================
-function setupResizablePanes() {
+ function setupResizablePanes() {
   var handleLeft = document.getElementById('resize-handle-left');
   var handleRight = document.getElementById('resize-handle-right');
   var sidebar = document.getElementById('sidebar');
@@ -574,7 +564,6 @@ function setupResizablePanes() {
   var isResizingLeft = false;
   var isResizingRight = false;
   
-  // Left handle (sidebar resize)
   if (handleLeft && sidebar) {
     handleLeft.addEventListener('mousedown', function(e) {
       isResizingLeft = true;
@@ -583,7 +572,6 @@ function setupResizablePanes() {
     });
   }
   
-  // Right handle (code/diagram resize)
   if (handleRight && codeEditor && workspace) {
     handleRight.addEventListener('mousedown', function(e) {
       isResizingRight = true;
@@ -592,11 +580,9 @@ function setupResizablePanes() {
     });
   }
   
-  // Mouse move
   document.addEventListener('mousemove', function(e) {
     if (isResizingLeft && sidebar) {
       var newWidth = e.clientX;
-      // CUSTOMIZE: Sidebar width limits (150px to 500px)
       if (newWidth >= 150 && newWidth <= 500) {
         sidebar.style.width = newWidth + 'px';
       }
@@ -607,14 +593,12 @@ function setupResizablePanes() {
       var offsetX = e.clientX - workspaceRect.left;
       var percentage = (offsetX / workspaceRect.width) * 100;
       
-      // CUSTOMIZE: Code/Diagram split limits (20% to 80%)
       if (percentage >= 20 && percentage <= 80) {
         codeEditor.style.width = percentage + '%';
       }
     }
   });
   
-  // Mouse up
   document.addEventListener('mouseup', function() {
     if (isResizingLeft || isResizingRight) {
       isResizingLeft = false;
@@ -627,3 +611,7 @@ function setupResizablePanes() {
 </script>
 </body>
 </html>
+
+
+
+ 
