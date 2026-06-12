@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>WaveDrom Library & Editor</title>
+
+<!-- WaveDrom from CDN -->
+<script src="https://wavedrom.com/skins/default.js" type="text/javascript"></script>
+<script src="https://wavedrom.com/wavedrom.min.js" type="text/javascript"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  /* Sidebar - File Browser */
+  #sidebar {
+    width: 280px;
+    background: #f5f5f5;
+    border-right: 2px solid #ddd;
+    overflow-y: auto;
+    padding: 15px;
+    flex-shrink: 0;
+  }
+  
+  #sidebar h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #333;
+  }
+  
+  .folder {
+    font-weight: bold;
+    color: #0366d6;
+    margin-top: 12px;
+    margin-bottom: 5px;
+    font-size: 14px;
+  }
+  
+  .file {
+    padding: 6px 10px;
+    margin: 2px 0;
+    margin-left: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    background: white;
+    border: 1px solid #ddd;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  
+  .file:hover {
+    background: #e3f2fd;
+    border-color: #2196F3;
+  }
+  
+  .file.active {
+    background: #2196F3;
+    color: white;
+    border-color: #2196F3;
+  }
+  
+  .version {
+    font-size: 10px;
+    color: #999;
+    margin-top: 15px;
+    text-align: center;
+  }
+  
+  .loading {
+    color: #2196F3;
+    font-style: italic;
+    padding: 10px;
+  }
+  
+  .error {
+    color: #f44336;
+    padding: 10px;
+    background: #ffebee;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
+  
+  /* Main Editor Area */
+  #editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  #header {
+    background: #2196F3;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  #header h1 {
+    font-size: 18px;
+    font-weight: 500;
+  }
+  
+  #header .controls {
+    display: flex;
+    gap: 10px;
+  }
+  
+  #header button {
+    padding: 6px 16px;
+    background: white;
+    color: #2196F3;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  
+  #header button:hover {
+    background: #f0f0f0;
+  }
+  
+  #workspace {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  
+  #code-editor {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid #ddd;
+  }
+  
+  #code-editor textarea {
+    flex: 1;
+    padding: 15px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 13px;
+    border: none;
+    resize: none;
+    outline: none;
+    background: #1e1e1e;
+    color: #d4d4d4;
+  }
+  
+  #diagram-viewer {
+    width: 50%;
+    overflow: auto;
+    background: white;
+    padding: 20px;
+  }
+  
+  #diagram-output {
+    min-height: 100%;
+  }
+  
+  .welcome-message {
+    text-align: center;
+    color: #999;
+    padding: 60px 20px;
+    font-size: 16px;
+  }
+  
+  .status {
+    padding: 8px 15px;
+    background: #fff3cd;
+    border-top: 1px solid #ffc107;
+    font-size: 12px;
+    color: #856404;
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar: File Browser -->
+<div id="sidebar">
+  <h2>📚 WaveDrom Library</h2>
+  <div class="loading">Loading files...</div>
+</div>
+
+<!-- Main Editor -->
+<div id="editor-container">
+  <!-- Header -->
+  <div id="header">
+    <h1 id="current-file">Select a file to start</h1>
+    <div class="controls">
+      <button onclick="renderDiagram()">🔄 Render</button>
+      <button onclick="downloadSVG()">💾 Save SVG</button>
+      <button onclick="clearEditor()">🗑️ Clear</button>
+    </div>
+  </div>
+  
+  <!-- Workspace: Split view -->
+  <div id="workspace">
+    <!-- Left: Code Editor -->
+    <div id="code-editor">
+      <textarea id="code-input" placeholder="Load a file or paste WaveDrom JSON here..."></textarea>
+    </div>
+    
+    <!-- Right: Diagram Viewer -->
+    <div id="diagram-viewer">
+      <div id="diagram-output">
+        <div class="welcome-message">
+          👈 Select a file from the sidebar to view and edit
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="status" class="status" style="display: none;"></div>
+</div>
+
+<script>
+// Configuration
+var REPO_OWNER = 'velikotny-design';
+var REPO_NAME = 'wavedrom-library';
+var BRANCH = 'main';
+var currentPath = null;
+var autoStyleEnabled = true;
+
+// Initialize
+window.onload = function() {
+  loadFileList();
+  setupAutoRender();
+};
+
+// Load file list from GitHub
+function loadFileList() {
+  var apiUrl = 'https://api.github.com/repos/' + REPO_OWNER + '/' + REPO_NAME + '/git/trees/' + BRANCH + '?recursive=1';
+  
+  fetch(apiUrl, {cache: 'no-cache'})
+    .then(function(res) {
+      if (!res.ok) throw new Error('Failed to load repository');
+      return res.json();
+    })
+    .then(function(data) {
+      var jsonFiles = data.tree.filter(function(item) {
+        return item.type === 'blob' && 
+               item.path.endsWith('.json') && 
+               item.path !== 'package.json';
+      });
+      
+      renderFileTree(jsonFiles);
+    })
+    .catch(function(err) {
+      document.getElementById('sidebar').innerHTML = 
+        '<h2>📚 WaveDrom Library</h2><div class="error">Error: ' + err.message + '</div>';
+    });
+}
+
+// Render file tree in sidebar
+function renderFileTree(files) {
+  var tree = {};
+  
+  files.forEach(function(file) {
+    var parts = file.path.split('/');
+    var folder = parts.length > 1 ? parts[0] : 'root';
+    if (!tree[folder]) tree[folder] = [];
+    tree[folder].push(file.path);
+  });
+  
+  var sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = '<h2>📚 WaveDrom Library</h2>';
+  
+  Object.keys(tree).sort().forEach(function(folder) {
+    var folderDiv = document.createElement('div');
+    folderDiv.className = 'folder';
+    folderDiv.textContent = '📁 ' + folder;
+    sidebar.appendChild(folderDiv);
+    
+    tree[folder].sort().forEach(function(path) {
+      var filename = path.split('/').pop();
+      var fileDiv = document.createElement('div');
+      fileDiv.className = 'file';
+      fileDiv.textContent = '📄 ' + filename;
+      fileDiv.onclick = function() {
+        loadFile(path);
+        
+        // Update active state
+        document.querySelectorAll('.file').forEach(function(f) {
+          f.classList.remove('active');
+        });
+        fileDiv.classList.add('active');
+      };
+      sidebar.appendChild(fileDiv);
+    });
+  });
+  
+  var versionDiv = document.createElement('div');
+  versionDiv.className = 'version';
+  versionDiv.textContent = files.length + ' files loaded';
+  sidebar.appendChild(versionDiv);
+}
+
+// Load file content
+function loadFile(path) {
+  currentPath = path;
+  document.getElementById('current-file').textContent = path;
+  showStatus('Loading ' + path + '...');
+  
+  var rawUrl = 'https://raw.githubusercontent.com/' + REPO_OWNER + '/' + REPO_NAME + '/' + BRANCH + '/' + path;
+  
+  fetch(rawUrl + '?nocache=' + Date.now())
+    .then(function(res) {
+      if (!res.ok) throw new Error('Failed to load file');
+      return res.text();
+    })
+    .then(function(content) {
+      document.getElementById('code-input').value = content;
+      showStatus('Loaded ' + path);
+      renderDiagram();
+    })
+    .catch(function(err) {
+      showStatus('Error: ' + err.message, true);
+    });
+}
+
+// Setup auto-render on code change
+function setupAutoRender() {
+  var textarea = document.getElementById('code-input');
+  var timeout = null;
+  
+  textarea.addEventListener('input', function() {
+    clearTimeout(timeout);
+    timeout = setTimeout(renderDiagram, 500);
+  });
+}
+
+// Render WaveDrom diagram
+function renderDiagram() {
+  var code = document.getElementById('code-input').value.trim();
+  if (!code) {
+    document.getElementById('diagram-output').innerHTML = 
+      '<div class="welcome-message">Enter WaveDrom JSON to render</div>';
+    return;
+  }
+  
+  try {
+    var data = eval('(' + code + ')');
+    
+    var output = document.getElementById('diagram-output');
+    output.innerHTML = '<div id="wave"></div>';
+    
+    WaveDrom.RenderWaveForm(0, data, 'wave');
+    
+    // Apply custom styling after render
+    if (autoStyleEnabled) {
+      setTimeout(applyCustomStyling, 700);
+    }
+    
+    showStatus('Diagram rendered ✓');
+  } catch (e) {
+    document.getElementById('diagram-output').innerHTML = 
+      '<div class="error">Parse error: ' + e.message + '</div>';
+    showStatus('Error: ' + e.message, true);
+  }
+}
+
+// YOUR CUSTOM STYLING CODE
+function applyCustomStyling() {
+  // Prevent recursive application
+  if (window._stylingInProgress) return;
+  window._stylingInProgress = true;
+  
+  // Font styling
+  document.querySelectorAll('svg text.info').forEach(function(el) {
+    el.style.fontSize='16px';
+    el.style.fontWeight='normal';
+  });
+  document.querySelectorAll('svg text[y="15"][text-anchor="middle"]').forEach(function(el) {
+    el.style.fontSize='14px';
+    el.style.fontWeight='normal';
+  });
+  document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el) {
+    if(el.textContent.length>1) el.style.fontSize='15px';
+  });
+  document.querySelectorAll('g[id^="wavelane_"] text[text-anchor="middle"]').forEach(function(el) {
+    if(el.textContent.trim().length===1) el.style.fontSize='6px';
+  });
+  
+  setTimeout(function() {
+    var wavearcs = document.getElementById('wavearcs_0');
+    if(!wavearcs) {
+      window._stylingInProgress = false;
+      return;
+    }
+    
+    // Reorder groups: lines first, then text
+    var groups = Array.from(wavearcs.children);
+    var lineGroups = [];
+    var textGroups = [];
+    
+    groups.forEach(function(group) {
+      if(group.querySelector('text')) {
+        textGroups.push(group);
+      } else {
+        lineGroups.push(group);
+      }
+    });
+    
+    lineGroups.forEach(function(g) { wavearcs.appendChild(g); });
+    textGroups.forEach(function(g) { wavearcs.appendChild(g); });
+    
+    // Add boxes and process positioning
+    document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el) {
+      var originalText = el.textContent;
+      var leadingWhitespace = (originalText.match(/^\s+/) || [''])[0];
+      var trailingWhitespace = (originalText.match(/\s+$/) || [''])[0];
+      var trimmedText = originalText.trim();
+      
+      if(trimmedText.length > 1){
+        var parent = el.parentNode;
+        
+        // Remove existing rectangles
+        parent.querySelectorAll('rect').forEach(function(r) { r.remove(); });
+        
+        // Count control chars
+        var leadingChars = (trimmedText.match(/^[\.\+]+/) || [''])[0];
+        var leadingDots = (leadingChars.match(/\./g) || []).length;
+        var leadingPlus = (leadingChars.match(/\+/g) || []).length;
+        
+        var trailingChars = (trimmedText.match(/[\.\+]+$/) || [''])[0];
+        var trailingDots = (trailingChars.match(/\./g) || []).length;
+        var trailingPlus = (trailingChars.match(/\+/g) || []).length;
+        
+        // Calculate shifts
+        var pixelsPerDot = 3;
+        var pixelsPerPlus = 3;
+        var xShift = (leadingDots - trailingDots) * pixelsPerDot;
+        var yShift = (leadingPlus - trailingPlus) * pixelsPerPlus;
+        
+        // Remove control characters
+        var cleanText = trimmedText;
+        cleanText = cleanText.replace(/^[\.\+]+/, '');
+        cleanText = cleanText.replace(/[\.\+]+$/, '');
+        
+        el.textContent
+        el.textContent = leadingWhitespace + cleanText + trailingWhitespace;
+        el.style.fill = 'black';
+        
+        var bbox = el.getBBox();
+        
+        var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('class', 'label-box');
+        var paddingX = 4;
+        var paddingY = -2;
+        var baseYOffset = 3;
+        
+        rect.setAttribute('x', bbox.x + xShift - paddingX);
+        rect.setAttribute('y', bbox.y - paddingY + baseYOffset - yShift);
+        rect.setAttribute('width', bbox.width + paddingX*2);
+        rect.setAttribute('height', bbox.height + paddingY*2);
+        rect.setAttribute('fill','grey');
+        rect.setAttribute('fill-opacity','0.9');
+        rect.setAttribute('rx','1');
+        rect.setAttribute('ry','1');
+        
+        parent.insertBefore(rect,el);
+        
+        if(!el.hasAttribute('data-custom-styled')) {
+          var currentX = parseFloat(el.getAttribute('x')) || 0;
+          el.setAttribute('x', currentX + xShift);
+          
+          var currentY = parseFloat(el.getAttribute('y')) || 0;
+          el.setAttribute('y', currentY + baseYOffset - yShift);
+          
+          el.setAttribute('data-custom-styled', 'true');
+        }
+      }
+    });
+    
+    setTimeout(function() {
+      document.querySelectorAll('#wavearcs_0 > g').forEach(function(group) {
+        var rects = group.querySelectorAll('rect');
+        if(rects.length > 1) {
+          rects.forEach(function(rect) {
+            if(!rect.classList.contains('label-box')) {
+              rect.remove();
+            }
+          });
+        }
+      });
+      
+      isApplying = false;
+      reconnectObserver();
+    }, 100);
+  }, 600);
+}
+
+function reconnectObserver() {
+  var target = document.getElementById('diagram-output');
+  if(target && window._wavedromObserver) {
+    window._wavedromObserver.observe(target, {
+      childList: true,
+      subtree: true
+    });
+  }
+}
+
+</script>
+</body>
+</html>
+
+
+      
