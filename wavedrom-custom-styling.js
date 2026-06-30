@@ -17,7 +17,7 @@
       el.style.fontWeight='normal';
     });
     document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
-      if(el.textContent.length>1) el.style.fontSize='14px';
+      if(el.textContent.length>1) el.style.fontSize='13px';
     });
     document.querySelectorAll('g[id^="wavelane_"] text[text-anchor="middle"]').forEach(function(el){
       if(el.textContent.trim().length===1) el.style.fontSize='4px';
@@ -74,8 +74,8 @@
           var trailingDots = (trailingChars.match(/\./g) || []).length;
           var trailingPlus = (trailingChars.match(/\+/g) || []).length;
           
-          var pixelsPerDot = 8;
-          var pixelsPerPlus = 6;
+          var pixelsPerDot = 7;
+          var pixelsPerPlus = 5;
           var xShift = (leadingDots - trailingDots) * pixelsPerDot;
           var yShift = (leadingPlus - trailingPlus) * pixelsPerPlus;
           
