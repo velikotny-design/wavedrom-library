@@ -45,6 +45,12 @@
       
       lineGroups.forEach(function(g){ wavearcs.appendChild(g); });
       textGroups.forEach(function(g){ wavearcs.appendChild(g); });
+
+       // ADD THIS LINE:
+      var svg = wavearcs.closest('svg');
+      if(svg) {
+        svg.appendChild(wavearcs);
+      }
       
       document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
         var originalText = el.textContent;
