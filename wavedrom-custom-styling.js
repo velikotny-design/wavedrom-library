@@ -118,13 +118,23 @@
             
             el.setAttribute('data-custom-styled', 'true');
           }
-        } else if(trimmedText.length === 1) {
-          // Single-char node labels: hide text, make box transparent
-          el.style.fill = 'transparent';
-          el.parentNode.querySelectorAll('rect').forEach(function(rect) {
-            rect.style.fill = 'transparent';
-          });
-        }
+        } 
+
+         else if(trimmedText.length === 1) {
+            if(window.showNodes) {
+              el.style.fill = 'black';
+              el.style.opacity = '1';
+              el.parentNode.querySelectorAll('rect').forEach(function(rect) {
+                rect.style.fill = 'white';
+              });
+            } else {
+              el.style.fill = 'transparent';
+              el.parentNode.querySelectorAll('rect').forEach(function(rect) {
+                rect.style.fill = 'transparent';
+              });
+            }
+          }               
+    
       });
       
       setTimeout(function() {
