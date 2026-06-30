@@ -296,11 +296,14 @@
   <div id="header">
     <h1 id="current-file">Select a file to start</h1>
     <div class="controls">
+      <button onclick="toggleNodes()" id="nodeToggleBtn">👁️ Show Nodes</button>
       <button onclick="renderDiagram()">🔄 Render</button>
       <button onclick="downloadSVG()">💾 Save SVG</button>
       <button onclick="clearEditor()">🗑️ Clear</button>
     </div>
   </div>
+
+ 
   
   <div id="workspace">
     <div id="code-editor">
@@ -520,6 +523,35 @@ function renderDiagram() {
     output.innerHTML = '<div class="error">Error rendering diagram:<br><br>' + e.message + '</div>';
   }
 }
+
+ var nodesVisible = false;
+
+function toggleNodes() {
+  nodesVisible = !nodesVisible;
+  window.showNodes = nodesVisible;
+  
+  var btn = document.getElementById('nodeToggleBtn');
+  btn.textContent = nodesVisible ? '🙈 Hide Nodes' : '👁️ Show Nodes';
+  
+  // Apply immediately without full re-render
+  document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
+    if(el.textContent.trim().length === 1) {
+      if(window.showNodes) {
+        el.style.fill = 'black';
+        el.style.opacity = '1';
+        el.parentNode.querySelectorAll('rect').forEach(function(rect) {
+          rect.style.fill = 'white';
+        });
+      } else {
+        el.style.fill = 'transparent';
+        el.parentNode.querySelectorAll('rect').forEach(function(rect) {
+          rect.style.fill = 'transparent';
+        });
+      }
+    }
+  });
+}
+
 
 function clearEditor() {
   document.getElementById('code-input').value = '';
