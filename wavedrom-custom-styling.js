@@ -118,6 +118,12 @@
             
             el.setAttribute('data-custom-styled', 'true');
           }
+        } else if(trimmedText.length === 1) {
+          // Single-char node labels: hide text, make box transparent
+          el.style.fill = 'transparent';
+          el.parentNode.querySelectorAll('rect').forEach(function(rect) {
+            rect.style.fill = 'transparent';
+          });
         }
       });
       
