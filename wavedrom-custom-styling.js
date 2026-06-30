@@ -19,9 +19,13 @@
     document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
       if(el.textContent.length>1) el.style.fontSize='13px';
     });
+
     document.querySelectorAll('g[id^="wavelane_"] text[text-anchor="middle"]').forEach(function(el){
-      if(el.textContent.trim().length===1) el.style.fontSize='4px';
-    });
+    if(el.textContent.trim().length===1) {
+      el.style.fontSize='4px';
+      el.style.opacity='0';         /* Fully transparent */
+    }
+    });  
     
     setTimeout(function(){
       var wavearcs = document.getElementById('wavearcs_0');
