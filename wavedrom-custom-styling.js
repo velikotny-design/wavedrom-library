@@ -46,11 +46,14 @@
       lineGroups.forEach(function(g){ wavearcs.appendChild(g); });
       textGroups.forEach(function(g){ wavearcs.appendChild(g); });
 
-       // ADD THIS LINE:
-      var svg = wavearcs.closest('svg');
-      if(svg) {
-        svg.appendChild(wavearcs);
-      }
+      // Move single-character node labels to the BACK (render first)
+      document.querySelectorAll('#wavearcs_0 > g').forEach(function(group) {
+        var textEl = group.querySelector('text');
+        if(textEl && textEl.textContent.trim().length === 1) {
+          // Move this group to the beginning (renders first = behind)
+          wavearcs.insertBefore(group, wavearcs.firstChild);
+        }
+      });      
       
       document.querySelectorAll('#wavearcs_0 > g > text').forEach(function(el){
         var originalText = el.textContent;
